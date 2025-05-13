@@ -1,0 +1,1355 @@
+Attribute VB_Name = "ModSimplePickUp"
+       Option Explicit
+   ' Public autECLPS As AutPS    'ST 05.08.2016 - Added under P3576b-WPI
+   ' Public autECLOIA As AutOIA  'ST 05.08.2016 - Added under P3576b-WPI
+   ' Public PS As New AutPS, OIA As New AutOIA 'mainframe    'ST 05.10.2016
+    
+    
+    Sub Collect_All()
+    
+      '------------------------------------------------------------------------
+    Rem  Created         : 15/02/11
+    Rem  Author          : Leanne Dalgleish
+    Rem  Description     : The macro collects the policy information from Heritage.
+    'Taken from Statement_automation macro
+    '
+    Rem  Further Info    :
+    Rem  Date             Developer     Action/Comments
+    '------------------------------------------------------------------------
+    '    dd/mm/yyyy       Name          X
+    '    dd/mm/yyyy       Name          X
+    '------------------------------------------------------------------------
+
+    Rem Error handler
+    On Error GoTo Error_Handler
+10  If MsgBox("Are you in slash transactions? To exit the Macro press CANCEL now.", vbOKCancel, "Do you wish to continue?") = vbCancel Then
+20  MsgBox ("You have pressed CANCEL and sucessfully stopped the Macro.  If you wish to re-start the macro press the GATHER INFORMATION button")
+21  Exit Sub
+22  End If
+
+'*********************ST 05.08.2016 - Changed under P3576b-WPI**************************
+26  If MsgBox("Macro may take 10-15 minutes to complete full run." & vbNewLine & "Continue?", vbYesNo + vbQuestion, "Warning!") = vbNo Then
+27      Exit Sub
+28  End If
+'********************End of ST 05.08.2016***********************************************
+
+32  Call modGlobals.Create_Globals
+    
+'*********************ST 05.08.2016 - Changed under P3576b-WPI**************************
+    'Throw error and stop macro execution if Statement data < Calculation date
+33  If wksCollect.Range("C4").Value < wksCollect.Range("C3").Value Then
+34      MsgBox "Statement date cannot be less than Calculation date. Please check.", , "Error! Macro stopped!"
+35      wksCollect.Range("C4").Select
+36      Exit Sub
+37  End If
+'********************End of ST 05.08.2016***********************************************
+
+40  strProcName = "Collect_All"
+41  Application.EnableEvents = False
+42  Application.Calculation = xlCalculationManual
+50  Application.ScreenUpdating = False
+'    Dim PS As New AutPS, OIA As New AutOIA 'mainframe  'ST 05.10.2016 - Commented out
+
+60  'PS.SetConnectionByName "A"
+70  ' OIA.SetConnectionByName "A"
+    Dim varT1 As Variant 'start time
+    Dim varT2 As Variant 'end time
+    Dim varDifft As Variant
+    Dim sEnviron As String
+    Dim dnpr_fv, dprp_fv, dnpr_tb, dprp_tb As Double   'Satya 02.06.2015
+    Dim dnpr_mvr As Double
+    Dim dprp_mvr As Double
+    Dim lFundNo As Long
+    Dim iLoop As Integer    'ST 05.08.2016 - Added under P3576b-WPI
+    Dim strWarningMsg As String 'ST 27.09.2016
+    
+80  varT1 = TimeSerial(Hour(Now), Minute(Now), Second(Now))
+    
+    Dim wksClean As Worksheet
+90  Set wksClean = Worksheets("Collect via Macro")
+    Dim wksOut As Worksheet
+100 Set wksOut = Worksheets("Proj-input")
+    
+    Dim X As Long, Y As Long, lPolNo As Long, dtStart As Date, dtEnd As Date, lSchNo As Long, lBasNo As Long
+    Dim strClass As String
+    Dim dtEntry As Date
+    Dim dtStatement As Date 'ST 05.08.2016 - Added under P3576b-WPI
+    
+110 lPolNo = wksClean.Range("C2")
+120 dtEnd = wksClean.Range("C3")
+
+'*********************ST 05.08.2016 - Changed under P3576b-WPI**************************
+'130 sEnviron = wksClean.Range("D5")
+'140 wksOut.Range("F39") = "Heritage (Mainframe)"
+125 dtStatement = wksClean.Range("C4")
+130 sEnviron = wksClean.Range("D6")
+'**********************End of ST 05.08.2016*********************************************
+
+    Rem collect policy details from /pol
+150 'OIA.WaitForInputReady (glTimeOutLimit)
+160 'OIA.WaitForAppAvailable (glTimeOutLimit)
+170 'PS.WaitForAttrib 1, 1, "00", "3c", 3, 10000
+180 'PS.WaitForCursor 1, 2, 10000
+190 'PS.SendKeys "[home][erase eof]" & "/pol," & lPolNo & ",hd" & "[enter]"
+200 'PS.WaitForAttrib 1, 1, "00", "3c", 3, 10000
+210 'PS.WaitForCursor 1, 2, 10000
+220 'OIA.WaitForInputReady (glTimeOutLimit)
+230 'OIA.WaitForAppAvailable (glTimeOutLimit)
+
+    Call WaitTimeCheck(3, 21, 7, lPolNo)    'ST 05.10.2016
+    
+231 wksOut.Range("C3") = lPolNo
+232 wksOut.Range("G10") = dtEnd
+240 wksOut.Range("C19") = Trim(PS.GetText(11, 48, 6)) 'salary
+241 strClass = Trim(PS.GetText(4, 73, 8)) 'policy class
+250 wksOut.Range("F35") = Trim(PS.GetText(4, 23, 5)) 'scheme no
+
+251 If strClass = "" Or strClass = "XLPLUS" Or strClass = "SSAS" Or strClass = "SEBO" Or strClass = "XLPSING" Then
+252 lSchNo = 0
+253 Else
+260 lSchNo = wksOut.Range("F35")
+261 End If
+270 If Trim(PS.GetText(7, 46, 8)) <> "0/00/00" And Trim(PS.GetText(7, 73, 8)) = "0/00/00" Then
+280 wksOut.Range("G5") = "Y" 'C/Out
+290 Else
+300 If Trim(PS.GetText(7, 46, 8)) = "0/00/00" And Trim(PS.GetText(7, 73, 8)) = "0/00/00" Then
+310 wksOut.Range("G5") = "N" 'C/Out
+320 Else
+330 wksOut.Range("G5") = "N" 'C/Out
+340 End If
+350 End If
+360 OIA.WaitForInputReady (glTimeOutLimit)
+370 OIA.WaitForAppAvailable (glTimeOutLimit)
+380 PS.SendKeys "[home][erase eof]" & "a" & "[enter]"
+390 PS.WaitForAttrib 1, 1, "00", "3c", 3, 10000
+400 PS.WaitForCursor 1, 2, 10000
+410 OIA.WaitForInputReady (glTimeOutLimit)
+420 OIA.WaitForAppAvailable (glTimeOutLimit)
+
+    Call WaitTimeCheck(7, 29, 18, "ACCOUNTING DETAILS")    'ST 05.10.2016
+
+430 If Trim(PS.GetText(10, 53, 1)) = "P" Then
+440 wksOut.Range("G6") = "N" 'Paidup
+450 Else
+460 wksOut.Range("G6") = "Y" 'active
+470 End If
+    
+480 OIA.WaitForInputReady (glTimeOutLimit)
+490 OIA.WaitForAppAvailable (glTimeOutLimit)
+500 PS.SendKeys "[home][erase eof]" & "l" & "[enter]"
+510 PS.WaitForAttrib 1, 1, "00", "3c", 3, 10000
+520 PS.WaitForCursor 1, 2, 10000
+530 OIA.WaitForInputReady (glTimeOutLimit)
+540 OIA.WaitForAppAvailable (glTimeOutLimit)
+
+    Call WaitTimeCheck(5, 36, 12, "LIFE DETAILS")    'ST 05.10.2016
+
+550 wksOut.Range("C4") = Trim(PS.GetText(8, 33, 7)) & " " & Trim(PS.GetText(6, 16, 25)) & " " & Trim(PS.GetText(7, 20, 19)) 'Name
+560 wksOut.Range("C16") = Trim(PS.GetText(11, 39, 1)) 'sex
+    
+570     If Trim(PS.GetText(13, 39, 1)) = "U" Or Trim(PS.GetText(13, 39, 1)) = "" Then
+580     wksOut.Range("C17") = "M"
+590     Else
+600     If Trim(PS.GetText(13, 39, 1)) = "D" Then
+610     wksOut.Range("C17") = "S"
+620     Else
+630     wksOut.Range("C17") = Trim(PS.GetText(13, 39, 1)) 'status
+640     End If
+650     End If
+'***Pradip:Added on 09/06/2016 under P3585e-UAT fix************
+
+651     If Trim(PS.GetText(21, 80, 1)) = "Y" Then         'DWP PUP Status check for P3585e-UAT
+652         wksOut.Range("DWPPUP_Flag") = "Y"
+653     Else
+654         wksOut.Range("DWPPUP_Flag") = "N"
+655     End If
+'**************************************************************
+    
+660     If Trim(PS.GetText(9, 73, 8)) = "0/00/00" Then
+670     wksOut.Range("C6") = ""
+'670     wksOut.Range("C6").FormulaR1C1 = "="""""
+680     Else
+690     wksOut.Range("C6") = CDate(Trim(PS.GetText(9, 73, 8))) 'spouse dob
+700     End If
+710     wksOut.Range("C5") = CDate(Trim(PS.GetText(9, 32, 8))) 'dob
+    
+720     OIA.WaitForInputReady (glTimeOutLimit)
+730     OIA.WaitForAppAvailable (glTimeOutLimit)
+740     PS.SendKeys "[home][erase eof]" & "u" & "[enter]"
+750     PS.WaitForAttrib 1, 1, "00", "3c", 3, 10000
+760     PS.WaitForCursor 1, 2, 10000
+770     OIA.WaitForInputReady (glTimeOutLimit)
+780     OIA.WaitForAppAvailable (glTimeOutLimit)
+
+        Call WaitTimeCheck(5, 32, 20, "UNDERWRITING DETAILS")    'ST 05.10.2016
+    
+790     If Trim(PS.GetText(9, 80, 1)) = "Y" Or Trim(PS.GetText(9, 80, 1)) = "L" Then 'waiver
+800     wksOut.Range("F42") = "Yes"
+810     Else: End If
+811     wksOut.Range("C41") = Trim(PS.GetText(19, 23, 4)) ' dis extra rate for wvr
+820     OIA.WaitForInputReady (glTimeOutLimit)
+830     OIA.WaitForAppAvailable (glTimeOutLimit)
+840     PS.SendKeys "[home][erase eof]" & "b1" & "[enter]"
+850     PS.WaitForAttrib 1, 1, "00", "3c", 3, 10000
+860     PS.WaitForCursor 1, 2, 10000
+870     OIA.WaitForInputReady (glTimeOutLimit)
+880     OIA.WaitForAppAvailable (glTimeOutLimit)
+
+        Call WaitTimeCheck(5, 20, 35, "UNIT LINKED PENSION BENEFIT DETAILS")    'ST 05.10.2016
+
+'890 wksOut.Range("D5") = Trim(PS.GetText(24, 26, 2))
+900     lBasNo = Trim(PS.GetText(24, 26, 2)) 'basis
+
+        ' *** Updated by Suman G on 15/03/2016 ***
+'910     wksOut.Range("C7") = CDate(Trim(PS.GetText(8, 46, 8))) 'nrd
+910     wksOut.Range("C7") = ModFunctions.Convert8CharacterDateString(Trim(PS.GetText(8, 46, 8)), True) 'nrd
+        ' *** End ***
+
+920     dtEntry = CDate(Trim(PS.GetText(6, 46, 8))) 'entry
+930     wksOut.Range("F41") = Trim(PS.GetText(22, 27, 2)) 'version
+        'Pradip:Added on 09/06/2016 under P3585e-UAT fix****
+931     If wksOut.Range("DWPPUP_Flag").Value = "N" Then
+932        wksOut.Range("Existing_LABpre") = Trim(PS.GetText(7, 21, 7)) 'LAB premium
+933     Else
+            ' *** Updated by Suman G on 15/03/2016 under P3585e ***
+    '940     wksOut.Range("C40") = Trim(PS.GetText(7, 21, 7)) 'LAB premium
+            If IsNumeric(Trim(PS.GetText(6, 20, 8))) Then
+940             wksOut.Range("LABAmount").Value = CDbl(Trim(PS.GetText(6, 20, 8)))   'LAB amount
+            Else
+                wksOut.Range("LABAmount").Value = 0
+            End If
+            ' *** End ***
+        End If 'Pradip
+        
+950     If Trim(PS.GetText(12, 48, 6)) <> "0/000" Then wksOut.Range("G27") = "0.50%" 'wra
+
+        '--------------ST 01.12.2016 - Added under P3576b-WPI Post Imp Fix-------------------
+        
+        OIA.WaitForInputReady (glTimeOutLimit)
+        OIA.WaitForAppAvailable (glTimeOutLimit)
+        PS.SendKeys "[home][erase eof]" & "b2" & "[enter]"
+        PS.WaitForAttrib 1, 1, "00", "3c", 3, 10000
+        PS.WaitForCursor 1, 2, 10000
+        OIA.WaitForInputReady (glTimeOutLimit)
+        OIA.WaitForAppAvailable (glTimeOutLimit)
+        
+        Dim lRow, lColumn As Long
+        Dim sFund As String
+        lFundNo = 1
+        wksPostSRA.Range("Y6:Z25").ClearContents    'Fund and Split Percentage
+        wksPostSRA.Range("AC6:AC25").ClearContents    'SMPI
+        wksPostSRA.Range("AD6:AD25").ClearContents    'FCA      'SK 04.01.2017 - Under P3842 - Pension Reforms PS16/12
+        'Loops through each fund in /pol,xxxxxxx,b2 screen
+        For lRow = 18 To 22
+            For lColumn = 1 To 43
+                sFund = Trim(PS.GetText(lRow, lColumn, 5))
+                If sFund = "" Then
+                    Exit For
+                Else
+                    wksPostSRA.Range("Y" & lFundNo + 5).Value = sFund
+                    wksPostSRA.Range("Z" & lFundNo + 5).Value = Trim(PS.GetText(lRow, lColumn + 6, 6)) / 100
+                    lFundNo = lFundNo + 1
+                End If
+                lColumn = lColumn + 20
+            Next lColumn
+            If sFund = "" Then
+                Exit For
+            End If
+        Next lRow
+        Calculate
+        '------------------------------------------------------------------------------------
+    
+951     If lSchNo > 0 Then ' if gpp and not XLPSING
+960     OIA.WaitForInputReady (glTimeOutLimit)
+970     OIA.WaitForAppAvailable (glTimeOutLimit)
+980     PS.SendKeys "[home][erase eof]" & "/er-accts-view," & lSchNo & ",p" & "[enter]"
+990     PS.WaitForAttrib 1, 1, "00", "3c", 3, 10000
+1000    PS.WaitForCursor 1, 2, 10000
+1010    OIA.WaitForInputReady (glTimeOutLimit)
+1020    OIA.WaitForAppAvailable (glTimeOutLimit)
+
+        Call WaitTimeCheck(3, 22, 16, "COMBINE EMPLOYER")    'ST 05.10.2016
+
+1030    wksOut.Range("F36") = Trim(PS.GetText(5, 35, 25)) 'scheme name
+1040    If Trim(PS.GetText(7, 76, 1)) = "Y" Then
+1050    wksOut.Range("C38") = "0.25%" 'FVR
+1060    Else: End If
+1070    If dtEnd > Trim(PS.GetText(21, 19, 5)) & "/" & Year(Now()) Then 'Renewal Date
+1080    wksOut.Range("G11") = CDate(Trim(PS.GetText(21, 19, 5)) & "/" & Year(Now() + 365))
+1090    Else
+1100    wksOut.Range("G11") = CDate(Trim(PS.GetText(21, 19, 5)) & "/" & Year(Now()))
+1110    End If
+    
+1120    OIA.WaitForInputReady (glTimeOutLimit)
+1130    OIA.WaitForAppAvailable (glTimeOutLimit)
+1140    PS.SendKeys "[home][erase eof]" & lBasNo & "[enter]"
+1150    PS.WaitForAttrib 1, 1, "00", "3c", 3, 10000
+1160    PS.WaitForCursor 1, 2, 10000
+1170    OIA.WaitForInputReady (glTimeOutLimit)
+1180    OIA.WaitForAppAvailable (glTimeOutLimit)
+
+        Call WaitTimeCheck(5, 35, 5, "Basis")    'ST 05.10.2016
+    
+1190    wksOut.Range("D8") = Trim(PS.GetText(7, 36, 7)) 'scheme type
+1200    wksOut.Range("C32") = Trim(PS.GetText(23, 38, 5)) 'pol fee
+1210    wksOut.Range("C33") = Trim(PS.GetText(24, 38, 5)) 'pup fee
+1220    If Trim(PS.GetText(23, 52, 4)) <> "" Then
+1230    wksOut.Range("C36") = Trim(PS.GetText(23, 52, 4)) / 100 'npr fcr
+1240    wksOut.Range("C37") = Trim(PS.GetText(23, 64, 4)) / 100 'prp fcr
+1250    Else: End If
+1260    If Trim(PS.GetText(22, 56, 4)) = "0.00" Or Trim(PS.GetText(22, 56, 4)) = "" Then  'sp fcr warning
+1270    Else
+1280    wksOut.Range("D36") = "FCR on Singles exists"
+1290    End If
+    
+1300    OIA.WaitForInputReady (glTimeOutLimit)
+1310    OIA.WaitForAppAvailable (glTimeOutLimit)
+1320    PS.SendKeys "[home][erase eof]" & "/er-i-alc-view," & lSchNo & "," & lBasNo & "[enter]"
+1330    PS.WaitForAttrib 1, 1, "00", "3c", 3, 10000
+1340    PS.WaitForCursor 1, 2, 10000
+1350    OIA.WaitForInputReady (glTimeOutLimit)
+1360    OIA.WaitForAppAvailable (glTimeOutLimit)
+    
+        Call WaitTimeCheck(7, 2, 13, "Non-protected")    'ST 05.10.2016
+    
+1371    If Round(dtEnd - dtEntry, 0) < 6 Then
+1372    X = 9
+1373    Else
+1374    If Round(dtEnd - dtEntry, 0) < 11 Then
+1375    X = 10
+1376    Else
+1377    X = 11
+1378    End If
+1379    End If
+
+1380    wksOut.Range("C34") = Trim(PS.GetText(X, 32, 6)) / 100 'npr alloc
+1381    wksOut.Range("C35") = Trim(PS.GetText(X + 6, 32, 6)) / 100 'prp alloc
+1382    Else
+Rem collect frequency
+1383    OIA.WaitForInputReady (glTimeOutLimit)
+1384    OIA.WaitForAppAvailable (glTimeOutLimit)
+1385    PS.SendKeys "[home][erase eof]" & "/pol," & lPolNo & ",a" & "[enter]"
+1386    PS.WaitForAttrib 1, 1, "00", "3c", 3, 10000
+1387    PS.WaitForCursor 1, 2, 10000
+1388    OIA.WaitForInputReady (glTimeOutLimit)
+1389    OIA.WaitForAppAvailable (glTimeOutLimit)
+1390    wksOut.Range("C42") = Trim(PS.GetText(10, 53, 1)) 'frequency - used for individual pols
+
+Rem get renewal date
+1400    OIA.WaitForInputReady (glTimeOutLimit)
+1410    OIA.WaitForAppAvailable (glTimeOutLimit)
+1420    PS.SendKeys "[home][erase eof]" & "b1" & "[enter]"
+1421    PS.WaitForAttrib 1, 1, "00", "3c", 3, 10000
+1422    PS.WaitForCursor 1, 2, 10000
+1423    OIA.WaitForInputReady (glTimeOutLimit)
+1424    OIA.WaitForAppAvailable (glTimeOutLimit)
+1425    If dtEnd > Trim(PS.GetText(6, 46, 5)) & "/" & Year(Now()) Then 'Renewal Date
+1430    wksOut.Range("G11") = CDate(Trim(PS.GetText(6, 46, 5)) & "/" & Year(Now() + 365))
+1435    Else
+1440    wksOut.Range("G11") = CDate(Trim(PS.GetText(6, 46, 5)) & "/" & Year(Now()))
+1450    End If
+1460    End If   'no scheme pick up for individual policies (without a scheme no.)
+1474
+1491    If sEnviron = "Production" Then
+1500    OIA.WaitForInputReady (glTimeOutLimit)
+1510    OIA.WaitForAppAvailable (glTimeOutLimit)
+1520    PS.SendKeys "[home][erase eof]" & "\gPROD" & "[enter]"
+1530    OIA.WaitForInputReady (glTimeOutLimit)
+1540    OIA.WaitForAppAvailable (glTimeOutLimit)
+1541    Else
+1542    OIA.WaitForInputReady (glTimeOutLimit)
+1543    OIA.WaitForAppAvailable (glTimeOutLimit)
+1544    PS.SendKeys "[home][erase eof]" & "/." & "[enter]"
+1545    OIA.WaitForInputReady (glTimeOutLimit)
+1546    OIA.WaitForAppAvailable (glTimeOutLimit)
+1547    PS.SendKeys "[home][erase eof]" & "menu" & "[enter]"
+1548    OIA.WaitForInputReady (glTimeOutLimit)
+1549    OIA.WaitForAppAvailable (glTimeOutLimit)
+
+        Call WaitTimeCheck(2, 16, 25, "IDEAL ASSISTANT MAIN MENU")    'ST 05.10.2016
+
+1550    End If
+
+1557    PS.SendKeys "[pf6][pf6]"
+1558    OIA.WaitForInputReady (glTimeOutLimit)
+1559    OIA.WaitForAppAvailable (glTimeOutLimit)
+
+    '----------Satya 02.06.2015 - Added below code under P3576-------------
+        
+1560    PS.SendKeys "[home][erase eof]" & "BUSDE" & lPolNo & "/" & Format(dtEnd, "ddmmyyyy")
+1561    PS.SendKeys "[enter]"
+1562    OIA.WaitForInputReady (glTimeOutLimit)
+1563    OIA.WaitForAppAvailable (glTimeOutLimit)
+
+        Call WaitTimeCheck(4, 13, 7, lPolNo)    'ST 05.10.2016
+
+        Dim iFundLoopLimit As Integer
+        Dim dtotal_npr_mvr, dtotal_prp_mvr As Double
+1564    dtotal_npr_mvr = 0
+1565    dtotal_prp_mvr = 0
+        
+1566    wksPostSRA.Range("B6:C25").ClearContents    'ST 19.08.2016 - Added under P3576b-WPI
+1567    wksPostSRA.Range("G6:G25").ClearContents    'ST 19.08.2016 - Added under P3576b-WPI
+        wksPostSRA.Range("H6:H25").ClearContents    'SK 04.01.2017 - Under P3842 - Pension Reforms PS16/12
+    
+        'ST 27.09.2016 - Code to Reset Column F formula
+        wksPostSRA.Range("F6").Formula = "=IF(B6="""","""",IF(D6=""Y"",""CSH"",B6))"
+        wksPostSRA.Range("F6:F25").FillDown
+
+1568    lFundNo = 1
+        iLoop = 6          'Code added by 'SK on 28.12.2016 - Changed under P3842 - PS16/12
+1569    Do Until (Trim(PS.GetText(5, 31, 3)) = "" Or iFundLoopLimit = 21)
+
+            '**********ST 05.08.2016 - P3576b-WPI*********************************
+            Dim dtotal_fund_value As Double
+            Dim dtotal_single_npr As Double
+            Dim dtotal_single_prp As Double
+            Dim dtotal_regular_npr As Double
+            Dim dtotal_regular_prp As Double
+            
+1570        dtotal_fund_value = 0
+1571        dtotal_single_npr = 0
+1572        dtotal_single_prp = 0
+1573        dtotal_regular_npr = 0
+1574        dtotal_regular_npr = 0
+1575        dtotal_single_npr = Trim(PS.GetText(9, 30, 10)) 'Basic
+1576        dtotal_single_prp = Trim(PS.GetText(10, 30, 10))
+1577        dtotal_regular_npr = Trim(PS.GetText(11, 30, 10))
+1578        dtotal_regular_prp = Trim(PS.GetText(12, 30, 10))
+
+1579        dtotal_fund_value = dtotal_single_npr + dtotal_single_prp + dtotal_regular_npr + dtotal_regular_prp
+
+            dtotal_single_npr = Trim(PS.GetText(14, 30, 10)) 'Full TB
+            dtotal_single_prp = Trim(PS.GetText(15, 30, 10))
+            dtotal_regular_npr = Trim(PS.GetText(16, 30, 10))
+            dtotal_regular_prp = Trim(PS.GetText(17, 30, 10))
+
+            dtotal_fund_value = dtotal_fund_value + dtotal_single_npr + dtotal_single_prp + dtotal_regular_npr + dtotal_regular_prp
+            
+            PS.SendKeys "[pf8]"
+            OIA.WaitForInputReady (glTimeOutLimit)
+            OIA.WaitForAppAvailable (glTimeOutLimit)
+            
+            Call WaitTimeCheck(7, 2, 15, "Single  NPR Dec")    'ST 05.10.2016
+            
+            dtotal_single_npr = Trim(PS.GetText(7, 30, 10)) 'Dec
+            dtotal_single_prp = Trim(PS.GetText(8, 30, 10))
+            dtotal_regular_npr = Trim(PS.GetText(9, 30, 10))
+            dtotal_regular_prp = Trim(PS.GetText(10, 30, 10))
+
+            dtotal_fund_value = dtotal_fund_value + dtotal_single_npr + dtotal_single_prp + dtotal_regular_npr + dtotal_regular_prp
+            
+            dtotal_single_npr = Trim(PS.GetText(12, 30, 10)) 'Int
+            dtotal_single_prp = Trim(PS.GetText(13, 30, 10))
+            dtotal_regular_npr = Trim(PS.GetText(14, 30, 10))
+            dtotal_regular_prp = Trim(PS.GetText(15, 30, 10))
+
+            dtotal_fund_value = dtotal_fund_value + dtotal_single_npr + dtotal_single_prp + dtotal_regular_npr + dtotal_regular_prp
+            
+            PS.SendKeys "[pf7]"
+            OIA.WaitForInputReady (glTimeOutLimit)
+            OIA.WaitForAppAvailable (glTimeOutLimit)
+            
+            Call WaitTimeCheck(9, 2, 17, "Single  NPR Basic")    'ST 05.10.2016
+            
+            '------- Code commented and added by 'SK on 28.12.2016 - Changed under P3842 - PS16/12-------
+'1580        wksPostSRA.Range("B" & lFundNo + 5).Value = Trim(PS.GetText(5, 31, 3))
+'1581        wksPostSRA.Range("C" & lFundNo + 5).Value = dtotal_fund_value
+            If (dtotal_fund_value > 0) Then
+1580            wksPostSRA.Range("B" & iLoop).Value = Trim(PS.GetText(5, 31, 3))
+1581            wksPostSRA.Range("C" & iLoop).Value = dtotal_fund_value
+                iLoop = iLoop + 1
+            End If
+            '------------------------------------------ END ---------------------------------------------
+            
+            '**********End of ST 05.08.2016****************************************
+        
+1582        PS.SendKeys "[pf8]"
+            OIA.WaitForInputReady (glTimeOutLimit)
+            OIA.WaitForAppAvailable (glTimeOutLimit)
+            Call WaitTimeCheck(7, 2, 15, "Single  NPR Dec")    'ST 05.10.2016
+            
+1583        PS.SendKeys "[pf8]"
+            OIA.WaitForInputReady (glTimeOutLimit)
+            OIA.WaitForAppAvailable (glTimeOutLimit)
+            Call WaitTimeCheck(7, 2, 15, "Single  NPR MVR")    'ST 05.10.2016
+            'Total NPR MVR value
+1584        dnpr_mvr = 0
+1585        dnpr_mvr = Trim(PS.GetText(7, 30, 10))
+1586        dnpr_mvr = dnpr_mvr + Trim(PS.GetText(9, 30, 10))
+1587        dtotal_npr_mvr = dtotal_npr_mvr + dnpr_mvr  'Satya 01/07/2015
+            'Total PRP MVR value
+1588        dprp_mvr = 0
+1589        dprp_mvr = Trim(PS.GetText(8, 30, 10))
+1590        dprp_mvr = dprp_mvr + Trim(PS.GetText(10, 30, 10))
+1591        dtotal_prp_mvr = dtotal_prp_mvr + dprp_mvr  'Satya 01/07/2015
+            
+1592        PS.SendKeys "[pf7]"
+            OIA.WaitForInputReady (glTimeOutLimit)
+            OIA.WaitForAppAvailable (glTimeOutLimit)
+            Call WaitTimeCheck(7, 2, 15, "Single  NPR Dec")    'ST 05.10.2016
+1593        PS.SendKeys "[pf7]"
+            OIA.WaitForInputReady (glTimeOutLimit)
+            OIA.WaitForAppAvailable (glTimeOutLimit)
+            Call WaitTimeCheck(9, 2, 17, "Single  NPR Basic")    'ST 05.10.2016
+                
+1594        lFundNo = lFundNo + 1
+1595        Call PS.SendKeys(Left(CStr(lFundNo) & "                              ", 2), 5, 18)
+1596        PS.SendKeys "[enter]"
+1597        OIA.WaitForInputReady (glTimeOutLimit)
+1598        OIA.WaitForAppAvailable (glTimeOutLimit)
+
+            Call WaitTimeCheck(iMaxWaitTime:=2)       'ST 05.10.2016
+
+1599        iFundLoopLimit = iFundLoopLimit + 1
+
+1600     Loop
+
+    '----------------------------------------------------------------------
+    
+        'ST 27.09.2016 - find Mother fund of Non-wp fund
+        Calculate
+        
+        PS.SendKeys "[home][erase eof]" & "SBPME"
+        PS.SendKeys "[enter]"
+        OIA.WaitForInputReady (glTimeOutLimit)
+        OIA.WaitForAppAvailable (glTimeOutLimit)
+
+        Call WaitTimeCheck(iMaxWaitTime:=1)    'ST 05.10.2016
+
+        With wksPostSRA
+            For iLoop = 6 To 25
+                If .Range("B" & iLoop).Value = "" Then Exit For
+                If .Range("D" & iLoop).Value = "N" Then
+                    Call PS.SendKeys(Left((Trim(.Range("B" & iLoop).Value)) & "                              ", 3), 5, 36)
+                    PS.SendKeys "[enter]"
+                    Call ModFunctions.AddWaitTime
+                    
+                    Call WaitTimeCheck(2, 16, 17, "Check mother fund")    'ST 05.10.2016
+                    
+                    strWarningMsg = Trim(PS.GetText(3, 1, 80))
+                    If InStr(1, strWarningMsg, "MIRROR FUND not found") <> 0 Then
+                        'do nothing
+                    Else
+                        .Range("F" & iLoop).Value = Trim(PS.GetText(6, 33, 3))
+                    End If
+                End If
+            Next
+            Application.StatusBar = False
+        End With
+        
+    '----------------------------------------------------------------------
+    
+           
+'*******************ST 19.08.2016 - P3576b-WPI************************
+        'Scrape EGR (Economic Growth Rate) from SBPJL screen
+        OIA.WaitForInputReady (glTimeOutLimit)
+        OIA.WaitForAppAvailable (glTimeOutLimit)
+1610    PS.SendKeys "[home][erase eof]" & "SBPJL"
+1611    PS.SendKeys "[enter]"
+        OIA.WaitForInputReady (glTimeOutLimit)
+        OIA.WaitForAppAvailable (glTimeOutLimit)
+        
+        Call WaitTimeCheck(2, 18, 20, "SERIES B MOTHER FUND")    'ST 05.10.2016
+        
+1612    wksPostSRA.Select 'RS 12.09.2016
+        Calculate
+
+1621    With wksPostSRA
+1622        iLoop = 6
+'1623        Do While .Range("F" & iLoop).Value <> 0
+1623        Do While .Range("F" & iLoop).Value <> ""     'ST 05.10.2016
+'1624            Call PS.SendKeys(Left(Trim(.Range("F" & iLoop).Value) & "                              ", 4), 4, 28)
+1624            Call PS.SendKeys(Left(Trim(.Range("F" & iLoop).Value) & "                              ", 3), 4, 28) 'RS 12.09.2016 FND MNC can max 3 char
+1625            PS.SendKeys "[enter]"
+1626            OIA.WaitForInputReady (glTimeOutLimit)
+1627            OIA.WaitForAppAvailable (glTimeOutLimit)
+
+                Call WaitTimeCheck(3, 18, 10, "First page")    'ST 05.10.2016
+
+1628            Dim sText As String
+                Dim sScrapeFundMNC As String
+                Dim sSMPIRate As String                'SK 04.01.2017 - Under P3842 - Pension Reforms PS16/12
+                
+'                sScrapeFundMNC = Trim(PS.GetText(8, 47, 3))                 'RS 12.10.2016
+                sScrapeFundMNC = Trim(PS.GetText(8, 33, 3))                 'ST 03.01.2017 - Under P3842 - Pension Reforms PS16/12
+                If sScrapeFundMNC = Trim(.Range("F" & iLoop).Value) Then    'RS 12.10.2016
+'1629                sText = Trim(PS.GetText(8, 65, 8))
+1629                sText = Trim(PS.GetText(8, 46, 8))                      'ST 03.01.2017 - Under P3842 - Pension Reforms PS16/12
+                    sSMPIRate = Trim(PS.GetText(8, 67, 8))                  'SK 04.01.2017 - Under P3842 - Pension Reforms PS16/12
+                Else
+'                    sText = Trim(PS.GetText(9, 65, 8))                      'RS 12.10.2016
+                    sText = Trim(PS.GetText(9, 46, 8))                      'ST 03.01.2017 - Under P3842 - Pension Reforms PS16/12
+                    sSMPIRate = Trim(PS.GetText(9, 67, 8))                  'SK 04.01.2017 - Under P3842 - Pension Reforms PS16/12
+                End If
+                
+1630            If IsNumeric(sText) Then
+1631                .Range("G" & iLoop).Value = CDbl(sText) / 100
+                    .Range("H" & iLoop).Value = CDbl(sSMPIRate) / 100        'SK 04.01.2017 - Under P3842 - Pension Reforms PS16/12
+1632            Else
+1633                .Range("G" & iLoop).Value = 0 / 100 'or 0
+                    .Range("H" & iLoop).Value = 0 / 100 'or 0                'SK 04.01.2017 - Under P3842 - Pension Reforms PS16/12
+1634            End If
+1635            iLoop = iLoop + 1
+1636        Loop
+1637    End With
+
+'-------------------ST 01.12.2016 - Added under P3576b-WPI Post Imp Fix---------------------
+        'Scrape EGR (Economic Growth Rate) from SBPJL screen for AFC money
+        With wksPostSRA
+        iLoop = 6
+        Do While .Range("AB" & iLoop).Value <> ""     'ST 05.10.2016
+            Call PS.SendKeys(Left(Trim(.Range("AB" & iLoop).Value) & "                              ", 3), 4, 28)
+            PS.SendKeys "[enter]"
+            OIA.WaitForInputReady (glTimeOutLimit)
+            OIA.WaitForAppAvailable (glTimeOutLimit)
+
+            Call WaitTimeCheck(3, 18, 10, "First page")
+                
+'            sScrapeFundMNC = Trim(PS.GetText(8, 47, 3))
+            sScrapeFundMNC = Trim(PS.GetText(8, 33, 3))                 'ST 03.01.2017 - Under P3842 - Pension Reforms PS16/12
+            If sScrapeFundMNC = Trim(.Range("AB" & iLoop).Value) Then
+'                sText = Trim(PS.GetText(8, 65, 8))
+                sText = Trim(PS.GetText(8, 46, 8))                      'ST 03.01.2017 - Under P3842 - Pension Reforms PS16/12
+                sSMPIRate = Trim(PS.GetText(8, 67, 8))                  'SK 04.01.2017 - Under P3842 - Pension Reforms PS16/12
+            Else
+'                sText = Trim(PS.GetText(9, 65, 8))
+                sText = Trim(PS.GetText(9, 46, 8))                      'ST 03.01.2017 - Under P3842 - Pension Reforms PS16/12
+                sSMPIRate = Trim(PS.GetText(9, 67, 8))                  'SK 04.01.2017 - Under P3842 - Pension Reforms PS16/12
+            End If
+                
+            If IsNumeric(sText) Then
+                .Range("AC" & iLoop).Value = CDbl(sText) / 100
+                .Range("AD" & iLoop).Value = CDbl(sSMPIRate) / 100      'SK 04.01.2017 - Under P3842 - Pension Reforms PS16/12
+            Else
+                .Range("AC" & iLoop).Value = 0 / 100 'or 0
+                .Range("AD" & iLoop).Value = 0 / 100 'or 0              'SK 04.01.2017 - Under P3842 - Pension Reforms PS16/12
+            End If
+            iLoop = iLoop + 1
+        Loop
+    End With
+'-----------------------------------------------------------------------------------------------
+
+        wksOut.Select 'RS 12.09.2016
+
+'********************End of ST 19.08.2016******************************
+     
+    
+  '-----------------Satya 02.06.2015 - Changed below code under P3576----------
+'1580    PS.SendKeys "[home][erase eof]" & "BTOTE" & "[enter]"
+'1590    OIA.WaitForInputReady
+'1600    OIA.WaitForAppAvailable (glTimeOutLimit)
+'1610    PS.SendKeys lPolNo & Format(dtEnd, "ddmmyy") & "[enter]"
+'1620    OIA.WaitForInputReady
+'1630    OIA.WaitForAppAvailable
+'1640    wksOut.Range("G3") = Trim(PS.GetText(9, 35, 10)) 'npr fv
+'1650    wksOut.Range("G4") = Trim(PS.GetText(9, 49, 10)) 'prp fv
+        
+1638    PS.SendKeys "[home][erase eof]" & "BTOTE" & lPolNo & "/" & Format(dtEnd, "ddmmyy") & "[enter]"
+1639    OIA.WaitForInputReady (glTimeOutLimit)
+1640    OIA.WaitForAppAvailable (glTimeOutLimit)
+
+        Call WaitTimeCheck(2, 27, 14, "B-Unit Summary")    'ST 05.10.2016
+
+1641    dnpr_fv = Trim(PS.GetText(9, 35, 10))
+1642    dprp_fv = Trim(PS.GetText(9, 49, 10))
+1643    dnpr_tb = Trim(PS.GetText(22, 35, 10))
+1644    dprp_tb = Trim(PS.GetText(22, 49, 10))
+
+1645    ThisWorkbook.Sheets("D2D").Range("NPR_TB").Value = dnpr_tb
+1646    ThisWorkbook.Sheets("D2D").Range("PRP_TB").Value = dprp_tb
+1647    ThisWorkbook.Sheets("D2D").Range("NPR_MVR").Value = dnpr_mvr
+1648    ThisWorkbook.Sheets("D2D").Range("PRP_MVR").Value = dprp_mvr
+                 
+    'Satya 30/06/2015 - Changed below code under P3576 Post Imp Issue
+'1640    wksOut.Range("G3") = CDbl(dnpr_fv) + CDbl(dnpr_tb) - CDbl(dnpr_mvr) 'npr fv
+'1650    wksOut.Range("G4") = CDbl(dprp_fv) + CDbl(dprp_tb) - CDbl(dprp_mvr) 'prp fv
+1649    wksOut.Range("G3") = CDbl(dnpr_fv) + CDbl(dnpr_tb) - CDbl(dtotal_npr_mvr) 'npr fv
+1650    wksOut.Range("G4") = CDbl(dprp_fv) + CDbl(dprp_tb) - CDbl(dtotal_prp_mvr) 'prp fv
+ '----------------------------------------------------------------------------
+ 
+1660    If Trim(PS.GetText(15, 64, 9)) <> "0.00" Then 'TB warning
+1670    wksOut.Range("D59") = "TB on policy. Remember TVs should be bid if present"
+1680    Else: End If
+    
+1690    PS.SendKeys "[pf6][pf6]"
+1700    OIA.WaitForInputReady (glTimeOutLimit)
+1710    OIA.WaitForAppAvailable (glTimeOutLimit)
+
+        Call WaitTimeCheck(2, 16, 14, "B UNIT SUMMARY")    'ST 05.10.2016
+
+1720    PS.SendKeys "[home][erase eof]" & "TVFVE" & "[enter]"
+1730    OIA.WaitForInputReady (glTimeOutLimit)
+1740    OIA.WaitForAppAvailable (glTimeOutLimit)
+
+        Call WaitTimeCheck(2, 22, 19, "REQUEST FUND VALUES")    'ST 05.10.2016
+        
+1750    PS.SendKeys lPolNo & Format(dtEnd, "ddmmyy") & "[enter]"
+1760    OIA.WaitForInputReady (glTimeOutLimit)
+1770    OIA.WaitForAppAvailable (glTimeOutLimit)
+1780    PS.WaitForCursor 4, 13, 10000
+
+        Call WaitTimeCheck(4, 13, 7, lPolNo)    'ST 05.10.2016
+        
+1790    Y = 7
+1800    Do
+1810    If Trim(PS.GetText(Y, 8, 3)) = "" Then Exit Do
+'1820    wksOut.Range("H18") = "YES"
+1830    If Trim(PS.GetText(Y, 8, 3)) = "NPR" Then 'NPR values
+1840    If wksOut.Range("C51") = 0 Then
+1850    wksOut.Range("C51") = Trim(PS.GetText(Y, 20, 10)) 'npr
+1860    wksOut.Range("A51") = Trim(PS.GetText(Y, 2, 2))
+1870    Else
+1880    If wksOut.Range("C52") = 0 Then
+1890    wksOut.Range("C52") = Trim(PS.GetText(Y, 20, 10)) 'npr
+1900    wksOut.Range("A52") = Trim(PS.GetText(Y, 2, 2))
+1910    Else
+1920    If wksOut.Range("C55") = 0 Then
+1930    wksOut.Range("C55") = Trim(PS.GetText(Y, 20, 10)) 'npr
+1940    wksOut.Range("A55") = Trim(PS.GetText(Y, 2, 2))
+1950    Else
+1960    If wksOut.Range("C56") = 0 Then
+1970    wksOut.Range("C56") = Trim(PS.GetText(Y, 20, 10)) 'npr
+1980    wksOut.Range("A56") = Trim(PS.GetText(Y, 2, 2))
+1990    Else: End If
+2000    End If
+2010    End If
+2020    End If
+2030    Else
+2040    If Trim(PS.GetText(Y, 8, 3)) = "PRP" Then 'PRP values
+2050    If wksOut.Range("C53") = 0 Then
+2060    wksOut.Range("C53") = Trim(PS.GetText(Y, 20, 10)) 'prp
+2070    wksOut.Range("A53") = Trim(PS.GetText(Y, 2, 2))
+2080    If wksOut.Range("C54") = 0 Then
+2090    wksOut.Range("C54") = Trim(PS.GetText(Y, 20, 10)) 'prp
+2100    wksOut.Range("A54") = Trim(PS.GetText(Y, 2, 2))
+2110    If wksOut.Range("C57") = 0 Then
+2120    wksOut.Range("C57") = Trim(PS.GetText(Y, 20, 10)) 'prp
+2130    wksOut.Range("A57") = Trim(PS.GetText(Y, 2, 2))
+2140    If wksOut.Range("C58") = 0 Then
+2150    wksOut.Range("C58") = Trim(PS.GetText(Y, 20, 10)) 'prp
+2160    wksOut.Range("C58") = Trim(PS.GetText(Y, 2, 2))
+2170    Else: End If
+2180    End If
+2190    End If
+2200    End If
+2210    End If
+2220    End If
+2230    Y = Y + 1
+2240    Loop Until Y = 20
+    
+2250    Y = 7 '51
+2260    Do
+'2270    If Trim(PS.GetText(y, 8, 3)) = "" Then Exit Do
+2280    If wksOut.Cells(Y + 44, 1) <> "" Then
+2290    PS.SendKeys "[pf6][pf6]"
+2300    OIA.WaitForInputReady (glTimeOutLimit)
+2310    OIA.WaitForAppAvailable (glTimeOutLimit)
+        Call WaitTimeCheck(2, 16, 25, "TRANSFER MAINTENANCE MENU")    'ST 05.10.2016
+
+2320    PS.SendKeys "[home][erase eof]" & "tvgde" & "[enter]"
+2330    OIA.WaitForInputReady (glTimeOutLimit)
+2340    OIA.WaitForAppAvailable (glTimeOutLimit)
+        Call WaitTimeCheck(2, 30, 18, "TV General Details")    'ST 05.10.2016
+
+2350    PS.SendKeys lPolNo & wksOut.Cells(Y + 44, 1) & "[enter]"
+2360    OIA.WaitForInputReady (glTimeOutLimit)
+2370    OIA.WaitForAppAvailable (glTimeOutLimit)
+        Call WaitTimeCheck(4, 13, 7, lPolNo)    'ST 05.10.2016
+
+2371    If Trim(PS.GetText(19, 9, 5)) = "PEN" Then
+2372    wksOut.Cells(Y + 44, 3) = 0
+2373    Else
+
+        If IsNumeric(Trim(PS.GetText(19, 9, 5))) Then
+2380        wksOut.Cells(Y + 44, 4).Value = CDbl(Trim(PS.GetText(19, 9, 5))) / 100
+        Else
+            wksOut.Cells(Y + 44, 4).Value = 0
+        End If
+        
+        If IsNumeric(Trim(PS.GetText(11, 54, 4))) Then
+2390        wksOut.Cells(Y + 44, 5).Value = CDbl(Trim(PS.GetText(11, 54, 4))) / 100
+        Else
+            wksOut.Cells(Y + 44, 5).Value = 0
+        End If
+        ' *** End ***
+        
+2391    End If
+2400    Else: End If
+2410    Y = Y + 1
+2420    Loop Until Y + 44 = 59
+    
+2430    PS.SendKeys "[pf6][pf6]"
+2440    OIA.WaitForInputReady (glTimeOutLimit)
+2450    OIA.WaitForAppAvailable (glTimeOutLimit)
+        Call WaitTimeCheck(2, 16, 25, "TRANSFER MAINTENANCE MENU")    'ST 05.10.2016
+
+2460    PS.SendKeys "[home][erase eof]" & "SVBPE" & "[enter]"
+2470    OIA.WaitForInputReady (glTimeOutLimit)
+2480    OIA.WaitForAppAvailable (glTimeOutLimit)
+        Call WaitTimeCheck(2, 9, 22, "SVB RENEWAL COMMISSION")    'ST 05.10.2016
+        'RS 18.08.2016
+        OIA.WaitForInputReady (glTimeOutLimit)
+        OIA.WaitForAppAvailable (glTimeOutLimit)
+
+2490    PS.SendKeys lPolNo & "SVB" & "[enter]"
+2500    OIA.WaitForInputReady (glTimeOutLimit)
+2510    OIA.WaitForAppAvailable (glTimeOutLimit)
+        Call WaitTimeCheck(5, 17, 7, lPolNo)    'ST 05.10.2016
+        'RS 18.08.2016
+        OIA.WaitForInputReady (glTimeOutLimit)
+        OIA.WaitForAppAvailable (glTimeOutLimit)
+        
+        'RS 18.08.2016
+        OIA.WaitForInputReady (glTimeOutLimit)
+        OIA.WaitForAppAvailable (glTimeOutLimit)
+        
+2520    If Trim(PS.GetText(3, 52, 5)) <> "exist" Then
+2530    wksOut.Range("C30") = Trim(PS.GetText(14, 17, 7)) / 100 'frc reg npr
+2540    wksOut.Range("C31") = Trim(PS.GetText(15, 17, 7)) / 100 'frc reg prp
+2550    Else: End If
+2560    PS.SendKeys "[pf6][pf6]"
+2570    OIA.WaitForInputReady (glTimeOutLimit)
+2580    OIA.WaitForAppAvailable (glTimeOutLimit)
+        Call WaitTimeCheck(2, 16, 25, "IDEAL ASSISTANT MAIN MENU")    'ST 05.10.2016
+
+2590    PS.SendKeys "[home][erase eof]" & "SMCML" & "[enter]"
+2600    OIA.WaitForInputReady (glTimeOutLimit)
+2610    OIA.WaitForAppAvailable (glTimeOutLimit)
+        Call WaitTimeCheck(2, 19, 27, "Specific Member Charge List")    'ST 05.10.2016
+
+2620    PS.SendKeys lPolNo & "[enter]"
+2630    OIA.WaitForInputReady (glTimeOutLimit)
+2640    OIA.WaitForAppAvailable (glTimeOutLimit)
+        Call WaitTimeCheck(5, 19, 7, lPolNo)    'ST 05.10.2016
+
+2650    PS.SendKeys "[pf8][pf8]"
+2660    PS.SendKeys "[pf8][pf8]"
+2670    OIA.WaitForInputReady (glTimeOutLimit)
+2680    OIA.WaitForAppAvailable (glTimeOutLimit)
+    
+2690    Y = 10
+2700    Do
+2710    If (Trim(PS.GetText(Y, 2, 8)) = "" And Y = 10) Or (Trim(PS.GetText(Y, 33, 5)) = 0 And Trim(PS.GetText(Y + 1, 33, 5)) = "") Then Exit Do
+2720    If Trim(PS.GetText(Y, 2, 8)) <> "" Then
+2730    Y = Y + 1
+2740    Else
+2750    Y = Y - 2
+2760    wksOut.Range("C25") = Trim(PS.GetText(Y, 33, 5)) 'smc
+2770    If wksOut.Range("F41") = 3 Or wksOut.Range("F41") = 4 Or wksOut.Range("F41") = 5 Then
+2780    wksOut.Range("C25") = (wksOut.Range("C25") + 0.75) / 100 '3/4% charge
+2790    If wksOut.Range("G5") = "Y" Then
+2800    wksOut.Range("C29") = "0.75%"
+2810    End If
+2820    Else
+2830    wksOut.Range("C25") = (wksOut.Range("C25")) / 100
+2840    End If
+2850    Exit Do
+2860    End If
+    
+2870    Loop
+       
+3010    PS.SendKeys "[pf6][pf6]"
+3020    OIA.WaitForInputReady (glTimeOutLimit)
+3030    OIA.WaitForAppAvailable (glTimeOutLimit)
+        Call WaitTimeCheck(2, 16, 27, "SPECIFIC MEMBER CHARGE MENU")    'ST 05.10.2016
+
+3040    PS.SendKeys "[home][erase eof]" & "PSALL" & "[enter]"
+3050    OIA.WaitForInputReady (glTimeOutLimit)
+3060    OIA.WaitForAppAvailable (glTimeOutLimit)
+        Call WaitTimeCheck(2, 22, 24, "SLICE ALLOCATION DETAILS")    'ST 05.10.2016
+
+3070    PS.SendKeys lPolNo & "[enter]"
+3080    OIA.WaitForInputReady (glTimeOutLimit)
+3090    OIA.WaitForAppAvailable (glTimeOutLimit)
+    
+        Call WaitTimeCheck(5, 11, 7, lPolNo)    'ST 05.10.2016
+    
+3100    If Trim(PS.GetText(7, 29, 4)) <> "" Then
+3110    wksOut.Range("C36") = Trim(PS.GetText(7, 29, 4)) / 100 'fcr reg npr
+3120    End If
+    
+3130    If Trim(PS.GetText(7, 40, 4)) <> "" Then
+3140    wksOut.Range("C36") = Trim(PS.GetText(7, 40, 4)) / 100 'fcr reg prp
+3150    End If
+    
+3160    wksOut.Range("C22") = 0.01
+        wksOut.Range("C23") = 0.01
+3161    wksOut.Select
+
+3162    If lSchNo = 0 Then  ' if not gpp but XLPSING
+
+3163    PS.SendKeys "[pf6][pf6]"
+3164    OIA.WaitForInputReady (glTimeOutLimit)
+3165    OIA.WaitForAppAvailable (glTimeOutLimit)
+3166    PS.SendKeys "[home][erase eof]" & "PAPFE" & "[enter]"
+3167    OIA.WaitForInputReady (glTimeOutLimit)
+3168    OIA.WaitForAppAvailable (glTimeOutLimit)
+3169    PS.SendKeys lPolNo & "[enter]"
+3170    OIA.WaitForInputReady (glTimeOutLimit)
+3171    OIA.WaitForAppAvailable (glTimeOutLimit)
+3172    If Trim(PS.GetText(3, 12, 8)) = "No Alloc" Then
+3173    Else
+3174    If wksOut.Range("C42") = "S" Then
+3175    wksOut.Range("C34") = Trim(PS.GetText(13, 41, 6)) / 100 'sing alloc
+3176    wksOut.Range("C35") = Trim(PS.GetText(13, 41, 6)) / 100 'sing alloc
+3177    Else
+3178    wksOut.Range("C34") = Trim(PS.GetText(10, 41, 6)) / 100 'npr alloc
+3179    wksOut.Range("C35") = Trim(PS.GetText(9, 41, 6)) / 100 'prp alloc
+3180    End If
+3181    End If
+3182    OIA.WaitForInputReady (glTimeOutLimit)
+3183    OIA.WaitForAppAvailable (glTimeOutLimit)
+3184    PS.SendKeys "[enter]"
+3185    OIA.WaitForInputReady (glTimeOutLimit)
+3186    OIA.WaitForAppAvailable (glTimeOutLimit)
+3187    If Trim(PS.GetText(3, 12, 8)) = "No Alloc" Then
+3188    Else
+3189    wksOut.Range("C32") = Trim(PS.GetText(14, 32, 5)) 'pol fee
+3190    End If
+3191    Else: End If
+        
+        OIA.WaitForInputReady (glTimeOutLimit)
+        OIA.WaitForAppAvailable (glTimeOutLimit)
+        'RS 01.07.2015
+        PS.SendKeys "[pf6][pf6]"
+        Call WaitTimeCheck(2, 16, 21, "SLICE ALLOCATION LIST")    'ST 05.10.2016
+        
+3192    If wksCollect.Range("PRDSA_Data") = "Yes" Then
+3193    If gsOffshoreUser = "Cognizant - Offshore Use" Then
+3194        Call ModSimplePickUp.PRDSA_Collect_Cognizant_only
+3195    Else
+                    
+            OIA.WaitForInputReady (glTimeOutLimit)
+            OIA.WaitForAppAvailable (glTimeOutLimit)
+            OIA.WaitForInputReady (glTimeOutLimit)
+            OIA.WaitForAppAvailable (glTimeOutLimit)    'ST 29.08.2016
+3196        Call ModSimplePickUp.PRDSA_Collect
+3197    End If
+3198    Else: End If
+
+        'RS 18.08.2016
+        PS.SendKeys "[ATTN]" 'Escape key
+        OIA.WaitForInputReady (glTimeOutLimit)
+        OIA.WaitForAppAvailable (glTimeOutLimit)
+        
+        Set OIA = Nothing
+        Set PS = Nothing
+        
+        Calculate 'RS 18.08.2016
+        
+        Call modGlobals.Create_Globals 'RS 18.08.2016
+
+
+'*********************ST 05.08.2016 - Added under P3576b-WPI**************************
+
+                
+3209    If Not IsFileOpen(gsGrowthRateCalculator) Then
+3210        If gsOffshoreUser = "Onshore Use" Then
+                 Application.Workbooks.Open (gsTransactionGrowthCalculatorPath & gsGrowthRateCalculator), ReadOnly:=True   'For UAT testing only
+'3211             Application.Workbooks.Open (ThisWorkbook.Path & "\Transaction Level growth rate calculator.xlsm"), ReadOnly:=True
+3212        Else
+3213            Application.Workbooks.Open (ThisWorkbook.Path & "\Transaction Level growth rate calculator.xlsm"), ReadOnly:=True
+3214        End If
+3215    Else: End If
+
+        'Set sheet
+3216    Set wkbGrowthRateCalculator = Workbooks(gsGrowthRateCalculator)
+3217    Set wksWelcome = wkbGrowthRateCalculator.Worksheets("Welcome")
+
+3220    wksWelcome.Range("Policy_Number").Value = lPolNo
+3230    wksWelcome.Range("Calculation_Date").Value = dtEnd
+3240    wksWelcome.Range("Statement_Date").Value = dtStatement
+                
+        'Run Growth Rate calculator
+4350    Application.Run "'" & wkbGrowthRateCalculator.Name & "'!Calculate_Growth_Rate" '97-2013
+        
+4370    Set wkbGrowthRateCalculator = Workbooks(gsGrowthRateCalculator)
+4380    Set wksWelcome = wkbGrowthRateCalculator.Worksheets("Welcome")
+4390    Set wkbkFutPro = Workbooks(ThisWorkbook.Name)
+4400    Set wksProjInput = wkbkFutPro.Worksheets("Proj-input")
+        
+4410    wkbkFutPro.Activate
+4420    Call Create_Globals
+        
+4490    wksProjInput.Range("R21").Value = wksWelcome.Range("Growth_Rate_SMPI").Value
+4500    wksProjInput.Range("R16").Value = wksWelcome.Range("Growth_Rate_Mid").Value
+4560    wksProjInput.Range("R15").Value = wksWelcome.Range("Growth_Rate_Low").Value
+4570    wksProjInput.Range("R17").Value = wksWelcome.Range("Growth_Rate_High").Value
+        
+4590    wkbGrowthRateCalculator.Close False
+4600    Set wkbGrowthRateCalculator = Nothing
+
+'---------------------POST SRA GROWTH RATE CALCULATION--------------------------------
+        Calculate
+        
+'        If IsError(wksProjInput.Range("R29").Value) Then
+'
+'            'Dummy values
+'            wksPostSRA.Range("G2").Value = 100 'low Fund value
+'            wksPostSRA.Range("H2").Value = 200 'Mid Fund value
+'            wksPostSRA.Range("I2").Value = 300 'High Fund value
+'            wksPostSRA.Range("J2").Value = 200 'SMPI Fund value
+'
+'        Else
+'
+'4601        wksPostSRA.Range("G2").Value = wksProjInput.Range("R29").Value 'Low Fund value
+'4602        wksPostSRA.Range("H2").Value = wksProjInput.Range("S29").Value 'Mid Fund value
+'4603        wksPostSRA.Range("I2").Value = wksProjInput.Range("T29").Value 'High Fund value
+'4604        wksPostSRA.Range("J2").Value = wksProjInput.Range("M56").Value 'SMPI Fund value
+'
+'        End If
+'********************************End of ST 05.08.2016****************************************
+
+4830    Call ModRun.Run_Calc
+
+4840    Application.EnableEvents = True
+4850    Application.Calculation = xlCalculationAutomatic
+4860    varT2 = TimeSerial(Hour(Now), Minute(Now), Second(Now))
+4870    varDifft = varT2 - varT1
+4880    Application.ScreenUpdating = True
+4890    MsgBox ("Finished. Your macro has run in " & Hour(varDifft) & " Hrs, " & Minute(varDifft) & " Minutes and " & Second(varDifft) & " Seconds.")
+        Application.StatusBar = "Macro execution completed"
+4900    Application.ScreenUpdating = True
+4910    Set PS = Nothing
+4920    Set OIA = Nothing
+4930    Call modGlobals.Delete_Globals
+4940    Exit Sub ' needs to be done so that the code stops and does not continue to Error_Handler code
+Error_Handler:
+        Application.EnableEvents = True
+        Resume
+        Application.Calculation = xlCalculationAutomatic
+        Set PS = Nothing
+        Set OIA = Nothing
+'        Set SBPJL = Nothing
+        gErr.Number = Err.Number
+        gErr.Description = Err.Description
+        gErr.Source = Err.Source
+        gErr.Erl = Erl
+        Call modError.Handler
+    End Sub
+      Sub PRDSA_Collect()
+    
+          '------------------------------------------------------------------------
+        Rem  Created         : 21/02/11
+        Rem  Author          : Leanne Dalgleish
+        Rem  Description     : The macro collects the policy information from Heritage PRDSA screen
+        '
+        '
+        Rem  Further Info    :
+        Rem  Date             Developer     Action/Comments
+        '------------------------------------------------------------------------
+        '    dd/mm/yyyy       Name          X
+        '    dd/mm/yyyy       Name          X
+        '------------------------------------------------------------------------
+    
+        Rem Error handler
+    On Error GoTo Error_Handler
+    
+10  modGlobals.Create_Globals
+20  Application.EnableEvents = False
+30  Application.Calculation = xlCalculationManual
+40  Application.ScreenUpdating = False
+    
+50  Set seMfr = New Session
+60  modGeneral.setStatus
+70  strProcName = "PRDSA_Collect"
+    Dim menuPRDSA As New menuPRDSA
+    Dim menuPRDSAPage1  As New menuPRDSAPage1
+    Dim menuPRDSAPage2 As New menuPRDSAPage2
+    Dim menuPRDSAPage3 As New menuPRDSAPage3
+    Dim menuPRDSAPage4 As New menuPRDSAPage4
+    
+    Rem checks length of first policy number and exits if not 7
+80  If Len(wksCollect.Range("C2")) <> 7 Then
+90  MsgBox "Policy Number is not valid. Please amend."
+100 Application.ScreenUpdating = True
+110 Exit Sub
+120 End If
+    
+130 If seMfr.bCheckSlash Then
+140 seMfr.ToggleScreenType
+    Call WaitTimeCheck(2, 16, 25, "IDEAL ASSISTANT MAIN MENU")    'ST 05.10.2016
+
+150 Else
+160 End If
+    'seMfr.EraseNext
+    'seMfr.navMenu2 sMenuBTOTE, CStr(lPol)
+    
+170 seMfr.navMenu smenuPRDSA
+    Call WaitTimeCheck(2, 26, 23, "PROJECTIONS DIAGNOSTICS")    'ST 05.10.2016
+
+    menuPRDSAPage1.PolicyNumber = CStr(wksCollect.Range("C2"))
+    menuPRDSAPage1.RequestDate = wksCollect.Range("C3") 'Format(', "ddmmyy")
+180 If menuPRDSAPage1.Class = "GP-LINK" Then wksCollect.Range("F40") = "GP-Link"
+190 seMfr.EnterNext
+
+    Call AddWaitTime    'ST 24.08.2016
+    Call WaitTimeCheck(5, 19, 7, CStr(wksCollect.Range("C2")))    'ST 05.10.2016
+    
+191 menuPRDSAPage1.FullDiagnosticsFlag = "Y"
+192 menuPRDSAPage1.LABDiagnosticsFlag = "Y"
+200 wksProjInput.Range("Freq") = menuPRDSAPage1.PremFreqFlag 'freq
+210 wksProjInput.Range("Current_Salary") = menuPRDSAPage1.Salary
+220 wksProjInput.Range("PRO_Sex") = menuPRDSAPage1.Sex
+    
+221 menuPRDSAPage1.PremEscRate = wksProjInput.Range("SalGrowth_BasB") * 100
+
+'222 menuPRDSAPage1.CurrentGrowthRate = wksProjInput.Range("InvGrowth_BasB_Existing") * 100
+'223 menuPRDSAPage1.FutureGrowthRate = wksProjInput.Range("InvGrowth_BasB") * 100
+    
+222 wksProjInput.Range("InvGrowth_BasB_Existing") = menuPRDSAPage1.CurrentGrowthRate / 100
+223 wksProjInput.Range("InvGrowth_BasB") = menuPRDSAPage1.FutureGrowthRate / 100
+
+    
+'230 seMfr.EnterNext
+240 seMfr.FKeyNext fnKeyF8
+    Call WaitTimeCheck(13, 32, 10, "DEDUCTIONS")    'ST 05.10.2016
+
+    menuPRDSAPage2.NAEIndex = wksProjInput.Range("NAE2_Input") * 100
+'250 seMfr.EnterNext
+
+270 wksProjInput.Range("AMC") = (menuPRDSAPage2.AMC_AccumAFC + menuPRDSAPage2.BFC_RegNPRAFC) / 100
+280 wksProjInput.Range("AMC_PUP") = (menuPRDSAPage2.AMC_AccumNFC + menuPRDSAPage2.BFC_RegNPRNFC) / 100
+290 wksProjInput.Range("AMC_PUP_Init") = menuPRDSAPage2.AMC_InitialNFC / 100
+310 If wksProjInput.Range("Freq") = "M" Then 'fcr
+320 wksProjInput.Range("NPR_FCR") = menuPRDSAPage2.FCR_RegNPR / 100
+330 wksProjInput.Range("PRP_FCR") = menuPRDSAPage2.FCR_RegPRP / 100
+340 Else
+350 wksProjInput.Range("NPR_FCR") = menuPRDSAPage2.FCR_SingNPR / 100
+360 wksProjInput.Range("PRP_FCR") = menuPRDSAPage2.FCR_RegPRP / 100
+370 End If
+    
+380 If menuPRDSAPage2.WaiverFlag = "Y" Then 'wvr
+390 wksProjInput.Range("Waiver_Flag") = "Yes"
+400 wksProjInput.Range("Disability_Rate") = menuPRDSAPage2.DisabilityUWGExtra / 100
+410 Else
+420 wksProjInput.Range("Waiver_Flag") = "No"
+430 End If
+    
+440 If menuPRDSAPage2.FVRFlag = "Y" Then 'fvr
+450 wksProjInput.Range("FVR") = "0.25%"
+460 Else
+470 wksProjInput.Range("FVR") = "0%"
+480 End If
+    
+490 wksProjInput.Range("D29") = menuPRDSAPage2.PUPSource
+    
+500 wksProjInput.Range("Member_charge") = menuPRDSAPage2.PolicyFee 'polfee
+510 wksProjInput.Range("PUP_charge") = menuPRDSAPage2.PolicyFee
+    
+520 seMfr.FKeyNext fnKeyF8
+    Call WaitTimeCheck(14, 29, 18, "COMMISSION DETAILS")    'ST 05.10.2016
+
+521 wksProjInput.Range("NPRAD") = menuPRDSAPage3.SMCOverride / 100
+    
+530 wksProjInput.Range("NPR_PUP_Term") = Left(menuPRDSAPage3.PUPTerm_NPR, 2)
+540 wksProjInput.Range("NPRAD_PUP") = menuPRDSAPage3.PUPChg_NPR / 100
+550 wksProjInput.Range("NPRAD_Part") = menuPRDSAPage3.PUPChg_PartialNPR / 100
+'560 wksProjInput.Range("LABPre") = menuPRDSAPage3.LABPremium       ' commented by Suman G on 15/03/2016 under P3585e
+560  wksProjInput.Range("Existing_LABpre") = menuPRDSAPage3.LABPremium 'pradip:10/06/2016-p3585e-UAT
+561 wksProjInput.Range("BO") = menuPRDSAPage3.BidOfferSpread / 100
+570 wksProjInput.Range("NPR_FV_Init") = menuPRDSAPage3.InpFund_InitialRegNPR + menuPRDSAPage3.InpFund_InitialSingNPR
+580 wksProjInput.Range("PRP_FV_Init") = menuPRDSAPage3.InpFund_InitialRegPRP + menuPRDSAPage3.InpFund_InitialSingPRP
+    
+590 seMfr.FKeyNext fnKeyF7
+    Call WaitTimeCheck(13, 32, 10, "DEDUCTIONS")    'ST 05.10.2016
+600 seMfr.FKeyNext fnKeyF7
+    Call WaitTimeCheck(9, 29, 16, "PERSONAL DETAILS")    'ST 05.10.2016
+610 If menuPRDSAPage1.ContractedOutFlag = "Y" Then wksProjInput.Range("PRPAD") = wksProjInput.Range("NPRAD")
+611 If gsOffshoreUser = "Offshore Use" Then seMfr.FKeyNext fnKeyF5 'prints PRDSA
+620 Application.ScreenUpdating = True
+630 Application.EnableEvents = True
+640 Application.Calculation = xlCalculationAutomatic
+650 Set seMfr = Nothing
+660 Call modGlobals.Delete_Globals
+670 Exit Sub ' needs to be done so that the code stops and does not continue to Error_Handler code
+Error_Handler:
+Application.Calculation = xlCalculationAutomatic
+Set seMfr = Nothing
+gErr.Number = Err.Number
+gErr.Description = Err.Description
+gErr.Source = Err.Source
+gErr.Erl = Erl
+Call modError.Handler
+    End Sub
+
+      Sub PRDSA_Collect_Cognizant_only()
+    
+          '------------------------------------------------------------------------
+        Rem  Created         : 27/02/12
+        Rem  Author          : Leanne Dalgleish
+        Rem  Description     : The macro collects the policy information from Heritage PRDSA screen
+        'This is for Cognizant offshore only as the environmen form and some send keys at not working.
+        '
+        Rem  Further Info    :
+        Rem  Date             Developer     Action/Comments
+        '------------------------------------------------------------------------
+        '    dd/mm/yyyy       Name          X
+        '    dd/mm/yyyy       Name          X
+        '------------------------------------------------------------------------
+    
+        Rem Error handler
+    On Error GoTo Error_Handler
+'    Dim PS As New AutPS, OIA As New AutOIA 'mainframe  'ST 05.10.2016 - Commented out
+
+10  modGlobals.Create_Globals
+20  Application.EnableEvents = False
+30  Application.Calculation = xlCalculationManual
+40  Application.ScreenUpdating = False
+50  PS.SetConnectionByName "A"
+60  OIA.SetConnectionByName "A"
+70  Set seMfr = New Session
+'70  modGeneral.setStatus
+80  strProcName = "PRDSA_Collect"
+    Dim menuPRDSA As New menuPRDSA
+    Dim menuPRDSAPage1  As New menuPRDSAPage1
+    Dim menuPRDSAPage2 As New menuPRDSAPage2
+    Dim menuPRDSAPage3 As New menuPRDSAPage3
+    Dim menuPRDSAPage4 As New menuPRDSAPage4
+    
+81  If seMfr.bMfConnect("A") = False Then 'InitialiseGlobalArrays ' set up slash and menu calls
+90      MsgBox "Heritage is not ready."
+100 Application.ScreenUpdating = True
+101 Application.EnableEvents = True
+102 Application.Calculation = xlCalculationAutomatic
+103 Exit Sub
+    Else: End If
+    Rem checks length of first policy number and exits if not 7
+104  If Len(wksCollect.Range("C2")) <> 7 Then
+105  MsgBox "Policy Number is not valid. Please amend."
+106 Application.ScreenUpdating = True
+107 Application.EnableEvents = True
+108 Application.Calculation = xlCalculationAutomatic
+110 Exit Sub
+120 End If
+    
+    PS.SendKeys "[pf6][pf6]"
+    OIA.WaitForInputReady (glTimeOutLimit)
+    OIA.WaitForAppAvailable (glTimeOutLimit)
+    PS.SendKeys "[home][erase eof]" & "PRDSA" & "[enter]"
+    OIA.WaitForInputReady (glTimeOutLimit)
+    OIA.WaitForAppAvailable (glTimeOutLimit)
+'    PS.SendKeys CStr(wksCollect.Range("C2")) & "[enter]"
+'    OIA.WaitForInputReady (glTimeOutLimit)
+'    OIA.WaitForAppAvailable
+    
+160 menuPRDSAPage1.PolicyNumber = CStr(wksCollect.Range("C2"))
+170 menuPRDSAPage1.RequestDate = wksCollect.Range("C3") 'Format(', "ddmmyy")
+180 If menuPRDSAPage1.Class = "GP-LINK" Then wksCollect.Range("F40") = "GP-Link"
+190 seMfr.EnterNext
+
+    Call AddWaitTime    'ST 24.08.2016
+
+191 menuPRDSAPage1.FullDiagnosticsFlag = "Y"
+192 menuPRDSAPage1.LABDiagnosticsFlag = "Y"
+200 wksProjInput.Range("Freq") = menuPRDSAPage1.PremFreqFlag 'freq
+210 wksProjInput.Range("Current_Salary") = menuPRDSAPage1.Salary
+220 wksProjInput.Range("PRO_Sex") = menuPRDSAPage1.Sex
+    
+221 menuPRDSAPage1.PremEscRate = wksProjInput.Range("SalGrowth_BasB") * 100
+
+'222 menuPRDSAPage1.CurrentGrowthRate = wksProjInput.Range("InvGrowth_BasB_Existing") * 100
+'223 menuPRDSAPage1.FutureGrowthRate = wksProjInput.Range("InvGrowth_BasB") * 100
+    
+222 wksProjInput.Range("InvGrowth_BasB_Existing") = menuPRDSAPage1.CurrentGrowthRate / 100
+223 wksProjInput.Range("InvGrowth_BasB") = menuPRDSAPage1.FutureGrowthRate / 100
+
+    
+'230 seMfr.EnterNext
+240 seMfr.FKeyNext fnKeyF8
+    menuPRDSAPage2.NAEIndex = wksProjInput.Range("NAE2_Input") * 100
+'250 seMfr.EnterNext
+
+270 wksProjInput.Range("AMC") = (menuPRDSAPage2.AMC_AccumAFC + menuPRDSAPage2.BFC_RegNPRAFC) / 100
+280 wksProjInput.Range("AMC_PUP") = (menuPRDSAPage2.AMC_AccumNFC + menuPRDSAPage2.BFC_RegNPRNFC) / 100
+290 wksProjInput.Range("AMC_PUP_Init") = menuPRDSAPage2.AMC_InitialNFC / 100
+310 If wksProjInput.Range("Freq") = "M" Then 'fcr
+320 wksProjInput.Range("NPR_FCR") = menuPRDSAPage2.FCR_RegNPR / 100
+330 wksProjInput.Range("PRP_FCR") = menuPRDSAPage2.FCR_RegPRP / 100
+340 Else
+350 wksProjInput.Range("NPR_FCR") = menuPRDSAPage2.FCR_SingNPR / 100
+360 wksProjInput.Range("PRP_FCR") = menuPRDSAPage2.FCR_RegPRP / 100
+370 End If
+    
+380 If menuPRDSAPage2.WaiverFlag = "Y" Then 'wvr
+390 wksProjInput.Range("Waiver_Flag") = "Yes"
+400 wksProjInput.Range("Disability_Rate") = menuPRDSAPage2.DisabilityUWGExtra / 100
+410 Else
+420 wksProjInput.Range("Waiver_Flag") = "No"
+430 End If
+    
+440 If menuPRDSAPage2.FVRFlag = "Y" Then 'fvr
+450 wksProjInput.Range("FVR") = "0.25%"
+460 Else
+470 wksProjInput.Range("FVR") = "0%"
+480 End If
+    
+490 wksProjInput.Range("D29") = menuPRDSAPage2.PUPSource
+    
+500 wksProjInput.Range("Member_charge") = menuPRDSAPage2.PolicyFee 'polfee
+510 wksProjInput.Range("PUP_charge") = menuPRDSAPage2.PolicyFee
+    
+520 seMfr.FKeyNext fnKeyF8
+521 wksProjInput.Range("NPRAD") = menuPRDSAPage3.SMCOverride / 100
+    
+530 wksProjInput.Range("NPR_PUP_Term") = Left(menuPRDSAPage3.PUPTerm_NPR, 2)
+540 wksProjInput.Range("NPRAD_PUP") = menuPRDSAPage3.PUPChg_NPR / 100
+550 wksProjInput.Range("NPRAD_Part") = menuPRDSAPage3.PUPChg_PartialNPR / 100
+'560 wksProjInput.Range("LABPre") = menuPRDSAPage3.LABPremium       ' Commented by Suman G on 15/03/2016 under P3585e
+561 wksProjInput.Range("BO") = menuPRDSAPage3.BidOfferSpread / 100
+570 wksProjInput.Range("NPR_FV_Init") = menuPRDSAPage3.InpFund_InitialRegNPR + menuPRDSAPage3.InpFund_InitialSingNPR
+580 wksProjInput.Range("PRP_FV_Init") = menuPRDSAPage3.InpFund_InitialRegPRP + menuPRDSAPage3.InpFund_InitialSingPRP
+    
+590 seMfr.FKeyNext fnKeyF7
+600 seMfr.FKeyNext fnKeyF7
+610 If menuPRDSAPage1.ContractedOutFlag = "Y" Then wksProjInput.Range("PRPAD") = wksProjInput.Range("NPRAD")
+611 If gsOffshoreUser = "Cognizant - Offshore Use" Then seMfr.FKeyNext fnKeyF5 'prints PRDSA
+620 Application.ScreenUpdating = True
+630 Application.EnableEvents = True
+640 Application.Calculation = xlCalculationAutomatic
+650 Set seMfr = Nothing
+660 Call modGlobals.Delete_Globals
+670 Exit Sub ' needs to be done so that the code stops and does not continue to Error_Handler code
+Error_Handler:
+Application.Calculation = xlCalculationAutomatic
+Set seMfr = Nothing
+gErr.Number = Err.Number
+gErr.Description = Err.Description
+gErr.Source = Err.Source
+gErr.Erl = Erl
+Call modError.Handler
+    End Sub
+       
+'----------------------------------------------------------------------------------------
+'Procedure:     : WaitTimeCheck()
+'Comments:      : Wait till screen ready or Max wait limit (giMaxWaitTime)
+'Arguments:     : None
+'Date             Developer                     Action
+'-----------------------------------------------------------------------------------------
+'05/10/2016       Satyanand Tripathi           Created
+'-----------------------------------------------------------------------------------------
+Sub WaitTimeCheck(Optional lRow As Long = 0, Optional lCol As Long = 0, Optional lPos As Long = 0, Optional vCompare As Variant = 0, Optional iMaxWaitTime As Integer = giMaxWaitTime)
+
+    Dim iWaitCount As Integer
+    Dim Update As Variant
+    Dim dStart As Double
+    iWaitCount = 0
+    Do
+        If vCompare <> 0 Then
+            Update = 0
+            If OIA.InputInhibited = 0 Then
+                Update = Trim(PS.GetText(lRow, lCol, lPos)) 'Edit as per screen req
+            Else
+            End If
+            If CStr(Update) = CStr(vCompare) Then Exit Do
+        End If
+        
+        dStart = Timer
+        Do While Timer < dStart + gdWaitTime
+            'Wait for "gdWaitTime" seconds
+        Loop
+        iWaitCount = iWaitCount + 1
+    Loop Until iWaitCount = giMaxWaitTime
+    
+End Sub

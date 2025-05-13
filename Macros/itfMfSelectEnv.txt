@@ -1,0 +1,36 @@
+VERSION 1.0 CLASS
+BEGIN
+  MultiUse = -1  'True
+END
+Attribute VB_Name = "itfMfSelectEnv"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = False
+Attribute VB_Exposed = False
+'Option Explicit
+'
+''Name:          itfMfSelectEnv
+''Description:   Class to define the itfMfSelectEnv interface
+''Author:        Luke Mooney
+'
+'Public Property Get CloseMethod() As frmCloseMethod
+'End Property
+'
+'Public Property Get EnvironmentString() As String
+'End Property
+'
+'Public Property Let ItemsOnPage(ByVal lItemsOnPage As Long)
+'End Property
+'
+'Public Property Get PageNumber() As Long
+'End Property
+'
+'Public Sub Refresh(ByVal vaMfEnvOptions As Variant)
+'End Sub
+'
+'Public Sub Show()
+'End Sub
+'
+'Public Sub Hide()
+'End Sub
+

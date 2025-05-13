@@ -1,0 +1,115 @@
+Attribute VB_Name = "ModBulkProj"
+      
+      Sub BulkProjection()
+      '------------------------------------------------------------------------
+        Rem  Created         : 16/02/11
+        Rem  Author          : Leanne Dalgleish
+        Rem  Description     : The macro copies the information from the Bulk Template, a row at a
+        'time to paste into the D2D sheet and collects the
+        'projections to be inputted back to the Bulk Template sheet.
+        'The projections are then used, along with the other information
+        'on the D2D to create manual statements.
+        '
+        'This macro has always been in this spreadsheet
+        Rem  Further Info    :
+        Rem  Date             Developer     Action/Comments
+        '------------------------------------------------------------------------
+        '    dd/mm/yyyy       Name          X
+        '    dd/mm/yyyy       Name          X
+        '------------------------------------------------------------------------
+    
+1    MsgBox "Bulk Run option has been disabled.", , "Warning!"   'ST 05.08.2016 - Added under P3576b-WPI
+2    Exit Sub
+    
+    'Satya 01.06.2015 - Added below line 5-8 under P3576
+'5    MsgBox "Please make sure you have entered correct fund values at column F & G with TB & MVR adjusted for with profit funds.", , "Macro Message"
+'6    Exit Sub
+
+    Dim Response As VbMsgBoxResult
+
+5   Response = MsgBox("Please make sure you have entered correct fund values at column F & G with TB & MVR adjusted for with profit funds.", vbOKCancel, "Warning!!")
+6   If Response = vbCancel Then
+7       Exit Sub
+8   End If
+    
+        Rem Error handler
+    On Error GoTo ErrorHandler
+    
+10  If MsgBox("Do you wish to collect the projections in bulk?", vbYesNo) = vbYes Then
+11 Call Open_Annrates_files
+    Rem Set variables
+20  Call modGlobals.Create_Globals
+30  strProcName = "BulkProjection"
+
+    Rem stops flickering screen and runs faster
+40  Application.ScreenUpdating = False
+    Rem use F8 to step through this macro.
+    Dim lRow As Long
+    Rem Starting row
+50  lRow = 3
+60   Do
+     Rem Change 20 to 53 if you have may variables across the policies.
+        'Can change to 21 if only AMC is different etc.
+'70  wksBulk.Select
+80  wksBulk.Range(Cells(lRow, 1), Cells(lRow, 85)).Copy
+    Rem pastes into D2D sheet
+'90  wksD2D.Select
+100 wksD2D.Range("A3").PasteSpecial Paste:=xlValues, Operation:=xlNone, SkipBlanks:= _
+            False, Transpose:=False
+110     Application.CutCopyMode = False
+111 Application.Calculation = xlCalculationAutomatic
+
+112 Call ModRun.Run_Calc_Bulk
+
+    Rem For collecting 5/7/9% & SMPI Figs (ALL)
+'120 wksD2D.Range("A7:AA7").Copy 'Commented on 17/01/2012
+'120 wksD2D.Range("A7:AM7").Copy  'Added on 17/01/2012
+120 wksD2D.Range("A18:O18").Copy
+    
+    Rem where you wish to paste
+130     wksBulk.Cells(lRow, 86).PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+            :=False, Transpose:=False
+140     Application.CutCopyMode = False
+
+'141 wksInputs.Range("G15").Copy
+'
+'142 wksBulk.Cells(lRow, 84).PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+'            :=False, Transpose:=False
+'143 Application.CutCopyMode = False
+'
+'144 wksInputs.Range("R16").Copy
+'
+'145 wksBulk.Cells(lRow, 85).PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
+'            :=False, Transpose:=False
+'146 Application.CutCopyMode = False
+    
+150 lRow = lRow + 1
+151 If wksBulk.Range("Print_Proj") = "Yes" Then
+152 wksProjInput.PrintOut Copies:=1, Collate:=True
+155 Else: End If
+'156 wksBulk.Select
+160 Loop Until wksBulk.Cells(lRow, 1) = ""
+    
+    Rem just changes the column width
+'170     wksBulk.Cells.Columns.AutoFit
+180     Application.ScreenUpdating = True
+    
+190 MsgBox "Projection Macro has now run - please paste the Bulk Template projections into your Data 2 Disk file."
+        Rem Set all variables, objects, ranges & class modules to nothing
+200 Call modGlobals.Delete_Globals
+210 Else: End If
+        Rem stops procedure
+220 Exit Sub
+        Rem Calls the error handler
+ErrorHandler:
+230 Application.ScreenUpdating = True
+'240 Call Close_Annrates_files
+250 gErr.Number = Err.Number
+260 gErr.Description = Err.Description
+270 gErr.Source = Err.Source
+280 gErr.Erl = Erl
+290 Call modError.Handler
+    End Sub
+
+
+

@@ -1,0 +1,923 @@
+VERSION 1.0 CLASS
+BEGIN
+  MultiUse = -1  'True
+END
+Attribute VB_Name = "menuPRDSAPage3"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = False
+Attribute VB_Exposed = False
+Option Explicit
+
+'************************************************************************
+'Comments       : Class Module menuPRDSAPage3 to model the PRDSAPage3 Screen on the
+'                 Heritage system...
+'
+'Date             Developer                  Action
+'************************************************************************
+'08/04/2008       Paul Humphreys             Generated
+'------------------------------------------------------------------------
+'
+'************************************************************************
+
+'------------------------------------------------------------------------
+'Comments       : Get Property - returns the SMCOverride from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'16/01/2012       Suman Roy                 Generated
+'------------------------------------------------------------------------
+Public Property Get SMCOverride() As Double
+    SMCOverride = CDbl(Trim(seMfr.GetText(2, 31, 6)))
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Let Property - sets the SMCOverride from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'16/01/2012       Suman Roy                 Generated
+'------------------------------------------------------------------------
+Public Property Let SMCOverride(ByVal inVal As Double)
+    Call seMfr.SendKeys("[eraseeof]" & CStr(inVal), 2, 31)
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Get Property - returns the BidOfferSpread from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'16/01/2012       Suman Roy                 Generated
+'------------------------------------------------------------------------
+Public Property Get BidOfferSpread() As Double
+    BidOfferSpread = CDbl(Trim(seMfr.GetText(2, 70, 5)))
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Let Property - sets the BidOfferSpread from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'16/01/2012       Suman Roy                 Generated
+'------------------------------------------------------------------------
+Public Property Let BidOfferSpread(ByVal inVal As Double)
+    Call seMfr.SendKeys("[eraseeof]" & CStr(inVal), 2, 70)
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Get Property - returns the Warning from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'08/04/2008       Paul Humphreys             Generated
+'------------------------------------------------------------------------
+Public Property Get Warning() As String
+    Warning = Trim(seMfr.GetText(5, 1, 80))
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Get Property - returns the PUPChg_NPR from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'08/04/2008       Paul Humphreys             Generated
+'------------------------------------------------------------------------
+Public Property Get PUPChg_NPR() As Double
+    PUPChg_NPR = CDbl(Trim(seMfr.GetText(3, 31, 6)))
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Let Property - sets the PUPChg_NPR from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'08/04/2008       Paul Humphreys             Generated
+'------------------------------------------------------------------------
+Public Property Let PUPChg_NPR(ByVal inVal As Double)
+    Call seMfr.SendKeys("[eraseeof]" & CStr(inVal), 3, 31)
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Get Property - returns the PUPChg_PRP from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'08/04/2008       Paul Humphreys             Generated
+'------------------------------------------------------------------------
+Public Property Get PUPChg_PRP() As Double
+    PUPChg_PRP = CDbl(Trim(seMfr.GetText(3, 69, 6)))
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Let Property - sets the PUPChg_PRP from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'08/04/2008       Paul Humphreys             Generated
+'------------------------------------------------------------------------
+Public Property Let PUPChg_PRP(ByVal inVal As Double)
+    Call seMfr.SendKeys("[eraseeof]" & CStr(inVal), 3, 69)
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Get Property - returns the PUPChg_PartialNPR from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'08/04/2008       Paul Humphreys             Generated
+'------------------------------------------------------------------------
+Public Property Get PUPChg_PartialNPR() As Double
+    PUPChg_PartialNPR = CDbl(Trim(seMfr.GetText(4, 31, 6)))
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Let Property - sets the PUPChg_PartialNPR from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'08/04/2008       Paul Humphreys             Generated
+'------------------------------------------------------------------------
+Public Property Let PUPChg_PartialNPR(ByVal inVal As Double)
+    Call seMfr.SendKeys("[eraseeof]" & CStr(inVal), 4, 31)
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Get Property - returns the PUPChg_PartialPRP from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'08/04/2008       Paul Humphreys             Generated
+'------------------------------------------------------------------------
+Public Property Get PUPChg_PartialPRP() As Double
+    PUPChg_PartialPRP = CDbl(Trim(seMfr.GetText(4, 69, 6)))
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Let Property - sets the PUPChg_PartialPRP from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'08/04/2008       Paul Humphreys             Generated
+'------------------------------------------------------------------------
+Public Property Let PUPChg_PartialPRP(ByVal inVal As Double)
+    Call seMfr.SendKeys("[eraseeof]" & CStr(inVal), 4, 69)
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Get Property - returns the PUPTerm_NPR from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'08/04/2008       Paul Humphreys             Generated
+'------------------------------------------------------------------------
+Public Property Get PUPTerm_NPR() As String
+    PUPTerm_NPR = Trim(seMfr.GetText(6, 33, 4))
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Let Property - sets the PUPTerm_NPR from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'08/04/2008       Paul Humphreys             Generated
+'------------------------------------------------------------------------
+Public Property Let PUPTerm_NPR(ByVal inVal As String)
+    Call seMfr.SendKeys("[eraseeof]" & inVal, 6, 33)
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Get Property - returns the PUPTerm_PRP from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'08/04/2008       Paul Humphreys             Generated
+'------------------------------------------------------------------------
+Public Property Get PUPTerm_PRP() As String
+    PUPTerm_PRP = Trim(seMfr.GetText(6, 71, 4))
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Let Property - sets the PUPTerm_PRP from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'08/04/2008       Paul Humphreys             Generated
+'------------------------------------------------------------------------
+Public Property Let PUPTerm_PRP(ByVal inVal As String)
+    Call seMfr.SendKeys("[eraseeof]" & inVal, 6, 71)
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Get Property - returns the SumAssured from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'08/04/2008       Paul Humphreys             Generated
+'------------------------------------------------------------------------
+Public Property Get SumAssured() As String
+    SumAssured = Trim(seMfr.GetText(8, 29, 8))
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Let Property - sets the SumAssured from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'08/04/2008       Paul Humphreys             Generated
+'------------------------------------------------------------------------
+Public Property Let SumAssured(ByVal inVal As String)
+    Call seMfr.SendKeys("[eraseeof]" & inVal, 8, 29)
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Get Property - returns the LABPremium from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'08/04/2008       Paul Humphreys             Generated
+'------------------------------------------------------------------------
+Public Property Get LABPremium() As Double
+    LABPremium = CDbl(Trim(seMfr.GetText(8, 66, 9)))
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Let Property - sets the LABPremium from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'08/04/2008       Paul Humphreys             Generated
+'------------------------------------------------------------------------
+Public Property Let LABPremium(ByVal inVal As Double)
+    Call seMfr.SendKeys("[eraseeof]" & CStr(inVal), 8, 66)
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Get Property - returns the UnderwritingExtra from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'08/04/2008       Paul Humphreys             Generated
+'------------------------------------------------------------------------
+Public Property Get UnderwritingExtra() As Double
+    UnderwritingExtra = CDbl(Trim(seMfr.GetText(9, 32, 5)))
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Let Property - sets the UnderwritingExtra from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'08/04/2008       Paul Humphreys             Generated
+'------------------------------------------------------------------------
+Public Property Let UnderwritingExtra(ByVal inVal As Double)
+    Call seMfr.SendKeys("[eraseeof]" & CStr(inVal), 9, 32)
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Get Property - returns the UnderwritingType from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'08/04/2008       Paul Humphreys             Generated
+'------------------------------------------------------------------------
+Public Property Get UnderwritingType() As String
+    UnderwritingType = Trim(seMfr.GetText(9, 72, 3))
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Let Property - sets the UnderwritingType from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'08/04/2008       Paul Humphreys             Generated
+'------------------------------------------------------------------------
+Public Property Let UnderwritingType(ByVal inVal As String)
+    Call seMfr.SendKeys("[eraseeof]" & inVal, 9, 72)
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Get Property - returns the UnderwritingDuration from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'08/04/2008       Paul Humphreys             Generated
+'------------------------------------------------------------------------
+Public Property Get UnderwritingDuration() As String
+    UnderwritingDuration = Trim(seMfr.GetText(10, 35, 2))
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Let Property - sets the UnderwritingDuration from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'08/04/2008       Paul Humphreys             Generated
+'------------------------------------------------------------------------
+Public Property Let UnderwritingDuration(ByVal inVal As String)
+    Call seMfr.SendKeys("[eraseeof]" & inVal, 10, 35)
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Get Property - returns the LABCostInclusiveFlag from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'08/04/2008       Paul Humphreys             Generated
+'------------------------------------------------------------------------
+Public Property Get LABCostInclusiveFlag() As String
+    LABCostInclusiveFlag = Trim(seMfr.GetText(10, 74, 1))
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Let Property - sets the LABCostInclusiveFlag from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'08/04/2008       Paul Humphreys             Generated
+'------------------------------------------------------------------------
+Public Property Let LABCostInclusiveFlag(ByVal inVal As String)
+    Call seMfr.SendKeys("[eraseeof]" & inVal, 10, 74)
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Get Property - returns the LABInclusiveROFFlag from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'08/04/2008       Paul Humphreys             Generated
+'------------------------------------------------------------------------
+Public Property Get LABInclusiveROFFlag() As String
+    LABInclusiveROFFlag = Trim(seMfr.GetText(11, 36, 1))
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Let Property - sets the LABInclusiveROFFlag from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'08/04/2008       Paul Humphreys             Generated
+'------------------------------------------------------------------------
+Public Property Let LABInclusiveROFFlag(ByVal inVal As String)
+    Call seMfr.SendKeys("[eraseeof]" & inVal, 11, 36)
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Get Property - returns the WDISPension from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'08/04/2008       Paul Humphreys             Generated
+'------------------------------------------------------------------------
+Public Property Get WDISPension() As Double
+    WDISPension = CDbl(Trim(seMfr.GetText(12, 28, 9)))
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Let Property - sets the WDISPension from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'08/04/2008       Paul Humphreys             Generated
+'------------------------------------------------------------------------
+Public Property Let WDISPension(ByVal inVal As Double)
+    Call seMfr.SendKeys("[eraseeof]" & CStr(inVal), 12, 28)
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Get Property - returns the NonHealthExtra from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'08/04/2008       Paul Humphreys             Generated
+'------------------------------------------------------------------------
+Public Property Get NonHealthExtra() As Double
+    NonHealthExtra = CDbl(Trim(seMfr.GetText(12, 70, 5)))
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Let Property - sets the NonHealthExtra from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'08/04/2008       Paul Humphreys             Generated
+'------------------------------------------------------------------------
+Public Property Let NonHealthExtra(ByVal inVal As Double)
+    Call seMfr.SendKeys("[eraseeof]" & CStr(inVal), 12, 70)
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Get Property - returns the WDISPensionEscRate from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'08/04/2008       Paul Humphreys             Generated
+'------------------------------------------------------------------------
+Public Property Get WDISPensionEscRate() As Double
+    WDISPensionEscRate = CDbl(Trim(seMfr.GetText(13, 32, 5)))
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Let Property - sets the WDISPensionEscRate from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'08/04/2008       Paul Humphreys             Generated
+'------------------------------------------------------------------------
+Public Property Let WDISPensionEscRate(ByVal inVal As Double)
+    Call seMfr.SendKeys("[eraseeof]" & CStr(inVal), 13, 32)
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Get Property - returns the DISCostBasis from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'08/04/2008       Paul Humphreys             Generated
+'------------------------------------------------------------------------
+Public Property Get DISCostBasis() As String
+    DISCostBasis = Trim(seMfr.GetText(13, 73, 2))
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Let Property - sets the DISCostBasis from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'08/04/2008       Paul Humphreys             Generated
+'------------------------------------------------------------------------
+Public Property Let DISCostBasis(ByVal inVal As String)
+    Call seMfr.SendKeys("[eraseeof]" & inVal, 13, 73)
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Get Property - returns the LevelCommissionRate from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'08/04/2008       Paul Humphreys             Generated
+'------------------------------------------------------------------------
+Public Property Get LevelCommissionRate() As Double
+    LevelCommissionRate = CDbl(Trim(seMfr.GetText(15, 31, 6)))
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Let Property - sets the LevelCommissionRate from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'08/04/2008       Paul Humphreys             Generated
+'------------------------------------------------------------------------
+Public Property Let LevelCommissionRate(ByVal inVal As Double)
+    Call seMfr.SendKeys("[eraseeof]" & CStr(inVal), 15, 31)
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Get Property - returns the CommissionShape from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'08/04/2008       Paul Humphreys             Generated
+'------------------------------------------------------------------------
+Public Property Get CommissionShape() As String
+    CommissionShape = Trim(seMfr.GetText(15, 73, 2))
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Let Property - sets the CommissionShape from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'08/04/2008       Paul Humphreys             Generated
+'------------------------------------------------------------------------
+Public Property Let CommissionShape(ByVal inVal As String)
+    Call seMfr.SendKeys("[eraseeof]" & inVal, 15, 73)
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Get Property - returns the InitialCommissionRate from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'08/04/2008       Paul Humphreys             Generated
+'------------------------------------------------------------------------
+Public Property Get InitialCommissionRate() As Double
+    InitialCommissionRate = CDbl(Trim(seMfr.GetText(16, 31, 6)))
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Let Property - sets the InitialCommissionRate from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'08/04/2008       Paul Humphreys             Generated
+'------------------------------------------------------------------------
+Public Property Let InitialCommissionRate(ByVal inVal As Double)
+    Call seMfr.SendKeys("[eraseeof]" & CStr(inVal), 16, 31)
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Get Property - returns the CommissionEnhancement from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'08/04/2008       Paul Humphreys             Generated
+'------------------------------------------------------------------------
+Public Property Get CommissionEnhancement() As Double
+    CommissionEnhancement = CDbl(Trim(seMfr.GetText(16, 69, 6)))
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Let Property - sets the CommissionEnhancement from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'08/04/2008       Paul Humphreys             Generated
+'------------------------------------------------------------------------
+Public Property Let CommissionEnhancement(ByVal inVal As Double)
+    Call seMfr.SendKeys("[eraseeof]" & CStr(inVal), 16, 69)
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Get Property - returns the RenewalCommRateChosen from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'08/04/2008       Paul Humphreys             Generated
+'------------------------------------------------------------------------
+Public Property Get RenewalCommRateChosen() As Double
+    RenewalCommRateChosen = CDbl(Trim(seMfr.GetText(17, 31, 6)))
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Let Property - sets the RenewalCommRateChosen from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'08/04/2008       Paul Humphreys             Generated
+'------------------------------------------------------------------------
+Public Property Let RenewalCommRateChosen(ByVal inVal As Double)
+    Call seMfr.SendKeys("[eraseeof]" & CStr(inVal), 17, 31)
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Get Property - returns the CommissionGivenUp from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'08/04/2008       Paul Humphreys             Generated
+'------------------------------------------------------------------------
+Public Property Get CommissionGivenUp() As Double
+    CommissionGivenUp = CDbl(Trim(seMfr.GetText(17, 69, 6)))
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Let Property - sets the CommissionGivenUp from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'08/04/2008       Paul Humphreys             Generated
+'------------------------------------------------------------------------
+Public Property Let CommissionGivenUp(ByVal inVal As Double)
+    Call seMfr.SendKeys("[eraseeof]" & CStr(inVal), 17, 69)
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Get Property - returns the SVCPcnt_RegNPR from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'08/04/2008       Paul Humphreys             Generated
+'------------------------------------------------------------------------
+Public Property Get SVCPcnt_RegNPR() As Double
+    SVCPcnt_RegNPR = CDbl(Trim(seMfr.GetText(18, 32, 5)))
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Let Property - sets the SVCPcnt_RegNPR from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'08/04/2008       Paul Humphreys             Generated
+'------------------------------------------------------------------------
+Public Property Let SVCPcnt_RegNPR(ByVal inVal As Double)
+    Call seMfr.SendKeys("[eraseeof]" & CStr(inVal), 18, 32)
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Get Property - returns the SVCPcnt_RegPRP from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'08/04/2008       Paul Humphreys             Generated
+'------------------------------------------------------------------------
+Public Property Get SVCPcnt_RegPRP() As Double
+    SVCPcnt_RegPRP = CDbl(Trim(seMfr.GetText(18, 70, 5)))
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Let Property - sets the SVCPcnt_RegPRP from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'08/04/2008       Paul Humphreys             Generated
+'------------------------------------------------------------------------
+Public Property Let SVCPcnt_RegPRP(ByVal inVal As Double)
+    Call seMfr.SendKeys("[eraseeof]" & CStr(inVal), 18, 70)
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Get Property - returns the SVCPcnt_SingNPR from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'08/04/2008       Paul Humphreys             Generated
+'------------------------------------------------------------------------
+Public Property Get SVCPcnt_SingNPR() As Double
+    SVCPcnt_SingNPR = CDbl(Trim(seMfr.GetText(19, 32, 5)))
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Let Property - sets the SVCPcnt_SingNPR from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'08/04/2008       Paul Humphreys             Generated
+'------------------------------------------------------------------------
+Public Property Let SVCPcnt_SingNPR(ByVal inVal As Double)
+    Call seMfr.SendKeys("[eraseeof]" & CStr(inVal), 19, 32)
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Get Property - returns the SVCPcnt_SingPRP from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'08/04/2008       Paul Humphreys             Generated
+'------------------------------------------------------------------------
+Public Property Get SVCPcnt_SingPRP() As Double
+    SVCPcnt_SingPRP = CDbl(Trim(seMfr.GetText(19, 70, 5)))
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Let Property - sets the SVCPcnt_SingPRP from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'08/04/2008       Paul Humphreys             Generated
+'------------------------------------------------------------------------
+Public Property Let SVCPcnt_SingPRP(ByVal inVal As Double)
+    Call seMfr.SendKeys("[eraseeof]" & CStr(inVal), 19, 70)
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Get Property - returns the InpFund_InitialRegNPR from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'08/04/2008       Paul Humphreys             Generated
+'------------------------------------------------------------------------
+Public Property Get InpFund_InitialRegNPR() As Double
+    InpFund_InitialRegNPR = CDbl(Trim(seMfr.GetText(21, 26, 12)))
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Let Property - sets the InpFund_InitialRegNPR from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'08/04/2008       Paul Humphreys             Generated
+'------------------------------------------------------------------------
+Public Property Let InpFund_InitialRegNPR(ByVal inVal As Double)
+    Call seMfr.SendKeys("[eraseeof]" & CStr(inVal), 21, 26)
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Get Property - returns the InpFund_AccumRegNPR from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'08/04/2008       Paul Humphreys             Generated
+'------------------------------------------------------------------------
+Public Property Get InpFund_AccumRegNPR() As Double
+    InpFund_AccumRegNPR = CDbl(Trim(seMfr.GetText(21, 66, 12)))
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Let Property - sets the InpFund_AccumRegNPR from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'08/04/2008       Paul Humphreys             Generated
+'------------------------------------------------------------------------
+Public Property Let InpFund_AccumRegNPR(ByVal inVal As Double)
+    Call seMfr.SendKeys("[eraseeof]" & CStr(inVal), 21, 66)
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Get Property - returns the InpFund_InitialRegPRP from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'08/04/2008       Paul Humphreys             Generated
+'------------------------------------------------------------------------
+Public Property Get InpFund_InitialRegPRP() As Double
+    InpFund_InitialRegPRP = CDbl(Trim(seMfr.GetText(22, 26, 12)))
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Let Property - sets the InpFund_InitialRegPRP from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'08/04/2008       Paul Humphreys             Generated
+'------------------------------------------------------------------------
+Public Property Let InpFund_InitialRegPRP(ByVal inVal As Double)
+    Call seMfr.SendKeys("[eraseeof]" & CStr(inVal), 22, 26)
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Get Property - returns the InpFund_AccumRegPRP from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'08/04/2008       Paul Humphreys             Generated
+'------------------------------------------------------------------------
+Public Property Get InpFund_AccumRegPRP() As Double
+    InpFund_AccumRegPRP = CDbl(Trim(seMfr.GetText(22, 66, 12)))
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Let Property - sets the InpFund_AccumRegPRP from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'08/04/2008       Paul Humphreys             Generated
+'------------------------------------------------------------------------
+Public Property Let InpFund_AccumRegPRP(ByVal inVal As Double)
+    Call seMfr.SendKeys("[eraseeof]" & CStr(inVal), 22, 66)
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Get Property - returns the InpFund_InitialSingNPR from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'08/04/2008       Paul Humphreys             Generated
+'------------------------------------------------------------------------
+Public Property Get InpFund_InitialSingNPR() As Double
+    InpFund_InitialSingNPR = CDbl(Trim(seMfr.GetText(23, 26, 12)))
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Let Property - sets the InpFund_InitialSingNPR from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'08/04/2008       Paul Humphreys             Generated
+'------------------------------------------------------------------------
+Public Property Let InpFund_InitialSingNPR(ByVal inVal As Double)
+    Call seMfr.SendKeys("[eraseeof]" & CStr(inVal), 23, 26)
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Get Property - returns the InpFund_AccumSingNPR from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'08/04/2008       Paul Humphreys             Generated
+'------------------------------------------------------------------------
+Public Property Get InpFund_AccumSingNPR() As Double
+    InpFund_AccumSingNPR = CDbl(Trim(seMfr.GetText(23, 66, 12)))
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Let Property - sets the InpFund_AccumSingNPR from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'08/04/2008       Paul Humphreys             Generated
+'------------------------------------------------------------------------
+Public Property Let InpFund_AccumSingNPR(ByVal inVal As Double)
+    Call seMfr.SendKeys("[eraseeof]" & CStr(inVal), 23, 66)
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Get Property - returns the InpFund_InitialSingPRP from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'08/04/2008       Paul Humphreys             Generated
+'------------------------------------------------------------------------
+Public Property Get InpFund_InitialSingPRP() As Double
+    InpFund_InitialSingPRP = CDbl(Trim(seMfr.GetText(24, 26, 12)))
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Let Property - sets the InpFund_InitialSingPRP from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'08/04/2008       Paul Humphreys             Generated
+'------------------------------------------------------------------------
+Public Property Let InpFund_InitialSingPRP(ByVal inVal As Double)
+    Call seMfr.SendKeys("[eraseeof]" & CStr(inVal), 24, 26)
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Get Property - returns the InpFund_AccumSingPRP from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'08/04/2008       Paul Humphreys             Generated
+'------------------------------------------------------------------------
+Public Property Get InpFund_AccumSingPRP() As Double
+    InpFund_AccumSingPRP = CDbl(Trim(seMfr.GetText(24, 66, 12)))
+End Property
+
+'------------------------------------------------------------------------
+'Comments       : Let Property - sets the InpFund_AccumSingPRP from the PRDSAPage3
+'                 Screen
+'
+'Date             Developer                  Action
+'------------------------------------------------------------------------
+'08/04/2008       Paul Humphreys             Generated
+'------------------------------------------------------------------------
+Public Property Let InpFund_AccumSingPRP(ByVal inVal As Double)
+    Call seMfr.SendKeys("[eraseeof]" & CStr(inVal), 24, 66)
+End Property
+
+

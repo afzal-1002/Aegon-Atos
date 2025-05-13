@@ -1,0 +1,199 @@
+Attribute VB_Name = "modUtility"
+    Option Explicit
+
+    Public Sub RecordUserAccess(Optional ByVal sGeneral As String = False)
+    '************************************************************************
+    'Comments       : Sub routine to record each policy processed through the
+    '               macro
+    '
+    'Date             Developer                  Action
+    '************************************************************************
+    '25/09/08         Paul Humphreys             Generated
+    '------------------------------------------------------------------------
+    '28/01/2011       Maili Konczak             Added fso.DeleteFile (gsDummyPath)
+    '                                           to error code line 70
+    '************************************************************************
+        
+        'Set up error handling
+16      On Error GoTo ErrorHandler
+17      Application.EnableCancelKey = xlErrorHandler
+        
+        'Declare variables
+        Dim dteAccess As Date
+        Dim timeAccess As Date
+        Dim f As TextStream
+        Dim fso As FileSystemObject
+        Dim iCounter As Integer
+25      Set fso = New FileSystemObject
+        
+        
+        'Record the procedure name for error handling
+29      strProcName = "modUtility.RecordUserAccess"
+        'check if the Access log is opened if yes then wait for few seconds
+31      iCounter = 1
+32      While fso.FileExists(gsDummyPath) = True
+33          Delay (1000)
+34          iCounter = iCounter + 1
+35          If iCounter = 10 Then
+36              Err.Raise 500015, strProcName, "User Access.log is open."
+            End If
+38      Wend
+            
+        'Check for user access log that already exists and if not,create it
+41      If fso.FileExists(gsACCESS_LOG) = False Then
+42          fso.CreateTextFile gsACCESS_LOG
+43          Set f = fso.OpenTextFile(Filename:=gsACCESS_LOG, IOMode:=ForAppending)
+            ' Date Time UserId UserName SpreadsheetName SpreadsheetLocation
+45          f.WriteLine "Date" & vbTab & "Time" & vbTab & _
+                    "User ID" & vbTab & "User Name" & vbTab & _
+                     "Spreadsheet Name" & vbTab & "Spreadsheet Location"
+            
+49          f.Close
+        End If
+        
+52      fso.CreateTextFile (gsDummyPath)
+        
+        'Record the date and time of access
+55      dteAccess = Format(Now, "DD MMM YYYY")
+56      timeAccess = Format(Now, "hh:mm:ss")
+
+        'Copy the details into the text file
+59      Set f = fso.OpenTextFile(Filename:=gsACCESS_LOG, IOMode:=ForAppending)
+60      f.WriteLine dteAccess & vbTab & timeAccess & vbTab & _
+                gsRACFID & vbTab & gsUserName & vbTab & _
+                ThisWorkbook.Name & vbTab & ThisWorkbook.Path & vbTab
+            
+64      f.Close
+
+66      fso.DeleteFile (gsDummyPath)
+        'Set the value of object variables to nothing
+68      Set fso = Nothing
+69      Set f = Nothing
+        
+        'Quit
+        Exit Sub
+
+    'Error Handler stores details of Error Raised
+    'for use by the main Error Handler Routine,
+    'then calls the main error handler
+ErrorHandler:
+        
+        'delete gsdummypath - added by MK 28/01/2011
+70        fso.DeleteFile (gsDummyPath)
+        
+        'Record the error details
+80      gErr.Number = Err.Number
+81      If InStr(1, gErr.Description, "File not found") > 0 Then
+82          gErr.Description = "User Access.log not found."
+83      Else
+84          gErr.Description = Err.Description
+        End If
+86      gErr.Source = Err.Source
+        
+        'Clear error handling
+89      On Error Resume Next
+        
+        'Set object variables to nothing
+92      Set fso = Nothing
+93      Set f = Nothing
+        
+        'Set the error handling to the originating routine
+96      On Error GoTo 0
+        
+        'Re-raise the original error
+99      Err.Raise gErr.Number, gErr.Source, gErr.Description
+
+    End Sub
+
+    '------------------------------------------------------------------------
+    'Comments       : Sub Routine to Capture the Error Log
+    '
+    '
+    'Date             Developer                       Action
+    '-------------------------------------------------------------------------
+    '16/02/10         Concadia Macro Team             Created
+    '-------------------------------------------------------------------------
+    Public Sub RecordErrorLog()
+
+        'Declare variables
+        Dim dteAccess As Date
+        Dim timeAccess As Date
+        Dim f As TextStream
+        Dim fso As FileSystemObject
+118     Set fso = New FileSystemObject
+        
+        'Check for user Error log that already exists and if not,create it
+121     If fso.FileExists(gsERROR_LOG) = False Then
+122         fso.CreateTextFile gsERROR_LOG
+123         Set f = fso.OpenTextFile(Filename:=gsERROR_LOG, IOMode:=ForAppending)
+124         f.WriteLine "User ID" & vbTab & "User Name" & vbTab & "Date" & "        " & "Time" & "      " & _
+               "Project No" & vbTab & "Project Name" & vbTab & vbTab & "Error Number" & vbTab _
+               & "Error Source" & vbTab & "Error Description"
+127         f.Close
+        End If
+        
+        'Record the date and time of access
+131     dteAccess = Format(Now, "DD MMM YYYY")
+132     timeAccess = Format(Now, "hh:mm:ss")
+
+        'Copy the details into the text file
+135     Set f = fso.OpenTextFile(Filename:=gsERROR_LOG, IOMode:=ForAppending)
+136     f.WriteLine gsRACFID & vbTab & gsUserName & vbTab & dteAccess & vbTab & timeAccess & vbTab & _
+            gsAPP_NO & vbTab & gsAPP_NAME & vbTab & vbTab & gErr.Number & vbTab & gErr.Source & _
+            vbTab & gErr.Description
+            
+140     f.Close
+        
+        'Set the value of object variables to nothing
+143     Set fso = Nothing
+144     Set f = Nothing
+        
+    End Sub
+
+    '------------------------------------------------------------------------
+    'Comments:      : This function writes one line to the named log file
+    'Assumptions:   : Connection to AEGONUK network
+    '
+    'Date             Developer                 Action
+    '------------------------------------------------------------------------
+    '18/06/2008       Luke Mooney               Created
+    '------------------------------------------------------------------------
+    Public Sub WriteMessageToLog(ByVal sMessage As String, _
+                                 ByVal sFilename As String)
+
+        Dim f As TextStream
+        Dim fso As FileSystemObject
+        Dim sFolder As String
+
+163     Set fso = New FileSystemObject
+        
+        'Check that the folder exists and if not, create it
+166     sFolder = Left(sFilename, InStrRev(sFilename, "\") - 1)
+167     If fso.FolderExists(sFolder) = False Then
+168         fso.createfolder sFolder
+        End If
+
+        'Check for log that already exists and if not, create it
+172     If fso.FileExists(sFilename) = False Then
+173         fso.CreateTextFile sFilename
+        End If
+
+        'write a line into the log
+177     Set f = fso.OpenTextFile(Filename:=sFilename, IOMode:=ForAppending)
+178     Call f.WriteLine(sMessage)
+179     Call f.Close
+               
+        'Set the value of object variables to nothing
+182     Set fso = Nothing
+183     Set f = Nothing
+
+    End Sub
+
+    Private Sub Delay(iCounter As Integer)
+    Dim iCount As Integer
+
+190     For iCount = 1 To iCounter
+191         iCount = iCount + 1
+192     Next
+    End Sub
+

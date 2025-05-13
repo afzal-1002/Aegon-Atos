@@ -1,0 +1,41 @@
+Attribute VB_Name = "ModPrint"
+Sub Print_Page()
+Attribute Print_Page.VB_Description = "Macro recorded 05/09/2007 by Authorised User"
+Attribute Print_Page.VB_ProcData.VB_Invoke_Func = " \n14"
+      '------------------------------------------------------------------------
+        Rem  Created         : 17/02/11
+        Rem  Author          : Leanne Dalgleish
+        Rem  Description     : Prints Proj-Input sheet
+        '
+        '
+        Rem  Further Info    :
+        Rem  Date             Developer     Action/Comments
+        '------------------------------------------------------------------------
+        '    dd/mm/yyyy       Name          X
+        '    dd/mm/yyyy       Name          X
+        '------------------------------------------------------------------------
+    
+        Rem Error handler
+    On Error GoTo ErrorHandler
+    
+    MsgBox "Print option has been disabled."
+        
+    Rem Set variables
+'20  Call modGlobals.Create_Globals
+'30  strProcName = "Print_Page"
+'Rem Selects active window and prints it out, the macro button is located on the "Proj-input" page.
+'40  wksProjInput.PrintOut Copies:=1, Collate:=True
+'50  Call modGlobals.Delete_Globals
+'60  Application.ScreenUpdating = True
+'70  MsgBox ("Print complete")
+'        Rem stops procedure
+80  Exit Sub
+        Rem Calls the error handler
+ErrorHandler:
+90 Application.ScreenUpdating = True
+100 gErr.Number = Err.Number
+110 gErr.Description = Err.Description
+120 gErr.Source = Err.Source
+130 gErr.Erl = Erl
+140 Call modError.Handler
+End Sub

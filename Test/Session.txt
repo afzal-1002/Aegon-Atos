@@ -1,0 +1,1892 @@
+VERSION 1.0 CLASS
+BEGIN
+  MultiUse = -1  'True
+END
+Attribute VB_Name = "Session"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = False
+Attribute VB_Exposed = False
+Option Explicit
+
+'------------------------------------------------------------------------
+' Description   : Includes methods and functions for connecting to SE
+'                 PCOMM session, navigating to different mainframe
+'                 screens, retrieving a text copy of any screen and for
+'                 updating certain screens
+'------------------------------------------------------------------------
+
+'List Instance Variables
+Private bNotCheckLen As Boolean
+'Private autECLPS As AutPS
+'Private autECLOIA As AutOIA
+Private mbConnected As Boolean
+Private mbSlash As Boolean
+Private mbMenuCanNavigate As Boolean
+Private mbINMM As Boolean
+Private mbDOLV As Boolean
+'Private masMenu(0 To 133) As String * 5
+Private masMenu(0 To 136) As String * 5     'ST 05.08.2016 - Changed under P3576b-WPI
+Private masSlash(0 To 1, 0 To 40) As String
+Private mbMfITLayout As Boolean
+Private mbStandardToggle As Boolean    'True for Production
+                                       'False for any Test/Qual/Dev
+                                       'environment
+
+
+Public Enum sSlash
+    sSlashAccAltA
+    sSlashAddrMod
+    sSlashAddrView
+    sSlashBUnitSummary
+    sSlashEmp
+    sSlashErAcctsModAC
+    sSlashErAcctsModP
+    sSlashErAcctsViewAC
+    sSlashErAcctsViewP
+    sSlashErAddrView
+    sSlashErBasisView1
+    sSlashErBasisViewCN
+    sSlashErBasisViewD
+    sSlashErBasisViewR
+    sSlashErDetsModE
+    sSlashErDetsViewBasis1
+    sSlashErDetsViewE
+    sSlashIDLXQ
+    sSlashJournal
+    sSlashPolA
+    sSlashPolB1
+    sSlashPolB2
+    sSlashPolC
+    sSlashPolhd
+    sSlashPolL
+    sSlashPolS
+    sSlashPolU
+    sSlashPPCert
+    sSlashRawQuotesStart
+    sSlashRxUs
+    sSlashSuspense
+    sSlashSwitch
+    sSlashSwitchAdd
+    sSlashTitleT
+    sSlashTitleView
+    sSlashUlPrintView
+    sSlashVprAdd
+    sSlashVprViewA
+    sSlashVprViewP
+    sSlashVprArcViewA
+    sSlashVprArcViewP
+End Enum
+
+Public Enum fnKey
+    fnKeyF3 = 3
+    fnKeyF5 = 5
+    fnKeyF6 = 6
+    fnKeyF7 = 7
+    fnKeyF8 = 8
+    fnKeyF10 = 10
+    fnKeyF11 = 11
+    fnKeyF12 = 12
+End Enum
+
+Public Enum sMenu
+    sMenuARPSL
+    sMenuAUTHE
+    sMenuBTOTE
+    smenuBUSDE
+    sMenuBYCDA
+    sMenuBYGDA
+    sMenuBYGDC
+    sMenuBYIPA
+    sMenuBYLAA
+    sMenuBYRBA
+    sMenuBYRBC
+    sMenuBYSDA
+    sMenuCES1L
+    sMenuCES2E
+    sMenuCHADA
+    sMenuCHADD
+    sMenuCLNLA
+    sMenuCLNPD
+    sMenuCOAGE
+    sMenuDCSRC
+    sMenuDPAYC
+    sMenuDOCSE
+    sMenuECHGL
+    sMenuETVDE
+    sMenuGPCNA
+    sMenuGPCNE
+    sMenuGPCSE
+    sMenuGPHFC
+    sMenuIAIRE
+    sMenuLIFEL
+    sMenuLSSWD
+    sMenuMAINM
+    sMenuMVRFL
+    sMenuNWACA
+    sMenuNWACC
+    sMenuNWACE
+    sMenuNWADA
+    sMenuNWADC
+    sMenuNWADE
+    sMenuNWAPA
+    sMenuNWCCA
+    sMenuNWCCC
+    sMenuNWCCE
+    sMenuNWDCD
+    sMenuNWICA
+    sMenuNWICC
+    sMenuNWICE
+    sMenuNWPBA
+    sMenuNWPBC
+    sMenuNWPBE
+    sMenuPABOE
+    sMenuPAIPC
+    sMenuPAIPE
+    sMenuPAPFE
+    sMenuPAWPE
+    sMenuPFCRE
+    sMenuPPETA
+    sMenuPPPDR
+    sMenuPPPIR
+    sMenuPPPPM
+    sMenuPPPRR
+    smenuPRDSA
+    sMenuPROTE
+    sMenuPSALL
+    sMenuPSLAL
+    sMenuPSLMA
+    sMenuPSLME
+    sMenuPSLML
+    sMenuPSWLC
+    sMenuPSWLE
+    sMenuPSWTE
+    sMenuPUPPA
+    sMenuPUPRA
+    sMenuPUPSE
+    sMenuRCARL
+    sMenuRCTTE
+    sMenuRCTTL
+    sMenuRELGA
+    sMenuRELNA
+    sMenuRELPA
+    sMenuRENAL
+    sMenuRENUE
+    sMenuRESVE
+    sMenuRNSTA
+    sMenuRTA1L
+    sMenuRTAAA
+    sMenuRTACL
+    sMenuRTADD
+    sMenuRTASD
+    sMenuRTAVL
+    sMenuRTTUA
+    sMenuSBDBA
+    sMenuSBDCA
+    sMeniSBDFA
+    sMenuSBDGA
+    sMenuSBDGC
+    sMeniSBDIA
+    sMenuSBDLA
+    sMenuSBPFL
+    sMenuSBPPL
+    sMenuSDAGA
+    sMenuSDICA
+    sMenuSDINA
+    sMenuSDPRA
+    sMenuSDSDA
+    sMenuSIPPE
+    sMenuSMADE
+    sMenuSMCME
+    sMenuSPCFL
+    sMenuSPCPL
+    sMenuSPOLL
+    sMenuSSAPA
+    sMenuSSBSA
+    sMenuSVBHL
+    sMenuSVBPA
+    sMenuSVBPE
+    sMenuTVDYE
+    sMenuTVFDE
+    sMenuTVFVE
+    sMenuTVGDE
+    sMenuTVGDL
+    sMenuTVPHE
+    sMenuTVPLA
+    sMenuTVRCC
+    sMenuTVRCE
+    sMenuTVURA
+    sMenuTVURL
+    sMenuUMEMA
+    sMenuUMEMD
+    sMenuUSERA
+    sMenuUSERD
+    sMenuVPRIC
+    sMenuVPRIL
+    sMenuVPSIC
+    sMenuSBPJL  'ST 05.08.2016 - Added under P3576b-WPI
+    sMenuSBPME  'ST 27.09.2016
+End Enum
+    '------------------------------------------------------------------------
+    'Comments:      : Connects to Session "A" PCOMM Session
+    'Arguments:     : sName
+    'Returns        : Boolean        True on success, False on error,
+    '                                Code execution stopped on interruption
+    '
+    'Date             Developer                  Action
+    '------------------------------------------------------------------------
+    '02/02/2007       Pedrog Ichikawa-Bryant     Created
+    '04/03/2008       Paul Humphreys             Edited to allow Session B
+    '                                            Connection through use of
+    '                                            argument sName
+    '29/11/2008       Luke Mooney                change marked LM20081129
+    '                                            so that bMfConnected accurately
+    '                                            reflects the connected status
+    '                                            if the Session has been Closed
+    '                                            Down
+    '------------------------------------------------------------------------
+    Public Function bMfConnect(sName As String) As Boolean
+    
+1840        mbConnected = False
+    
+        On Error GoTo ErrConnect
+    
+        'Create references to the PCOMM automation objects, autECLPS and
+        'autECLOIA and set the connections for both objects using sName
+        'as the Session Name
+'1850        Set autECLPS = New AutPS
+'1860        Set autECLOIA = New AutOIA
+        'Set autECLWin = New AutWinMetrics
+    
+'1870        autECLPS.SetConnectionByName (sName)
+'1880        autECLOIA.SetConnectionByName (sName)
+        'autECLWin.SetConnectionByName (sName)
+    
+1890        Call InitialiseGlobalArrays
+    
+        On Error Resume Next
+    
+'1900        If autECLPS.CommStarted Then                    'LM20081129 Added
+1910            mbConnected = True
+1920        End If                                          'LM20081129 Added
+    
+ExitConnect:
+1930        bMfConnect = mbConnected
+1940        Exit Function
+    
+ErrConnect:
+1950        mbConnected = False
+1960        Resume ExitConnect
+    
+    End Function
+    
+    '------------------------------------------------------------------------
+    'Comments:      : Checks if PCOMM Session is on the Logon screen
+    'Arguments:     : None
+    'Returns        : Boolean        True on success, False on error,
+    '                                Code execution stopped on interruption
+    '
+    'Date             Developer                  Action
+    '------------------------------------------------------------------------
+    '02/02/2007       Pedrog Ichikawa-Bryant     Created
+    '------------------------------------------------------------------------
+    Public Function bCheckLogon() As Boolean
+    
+'10      Select Case autECLPS.GetText(20, 22, 34)
+        Case "ENTER PASSWORD                    ", "ENTER YOUR NAME AND PASSWORD BELOW"
+            bCheckLogon = True
+        Case Else
+            bCheckLogon = False
+        End Select
+    
+70      Exit Function
+    
+    End Function
+    
+    '------------------------------------------------------------------------
+    'Comments:      : Checks if AEGON Menu conforms to IT Layout, uses module
+    '                 level boolean which gets set during either bCheckMenu
+    '                 or navAegonMenu
+    'Arguments:     : None
+    'Returns        : Boolean        True if IT Layout -
+    '                                False if Business Layout
+    '
+    'Date             Developer                  Action
+    '------------------------------------------------------------------------
+    '05/02/2007       Pedrog Ichikawa-Bryant     Created
+    '------------------------------------------------------------------------
+    Public Property Get bIsITEnvironment() As Boolean
+10      bIsITEnvironment = mbMfITLayout
+20  End Property
+    
+    '------------------------------------------------------------------------
+    'Comments:      : Retrieves a String Array of the Application List on
+    '                   the AEGON Menu on Mainframe
+    'Arguments:     : None
+    'Returns:       : String Array
+    '
+    'Assumptions:   : gbMfITLayout exists and is known
+    '
+    'Date             Developer                  Action
+    '------------------------------------------------------------------------
+    '11/05/2009       Luke Mooney               Created
+    '------------------------------------------------------------------------
+    Public Function GetMfApplications() As Variant
+    
+    Dim iStartRow       As Integer
+    Dim iEndRow         As Integer
+    Dim iRowCount       As Integer
+    Dim iStartCol       As Integer
+    Dim iColLength      As Integer
+    Dim iColCount       As Integer
+    Dim iPageCount      As Integer
+    Dim iMoreRow        As Integer
+    Dim iMoreCol        As Integer
+    Dim iArrayCount     As Integer
+    Dim bMore           As Boolean
+    Dim saryList()      As String
+    Dim sText           As String
+    
+'30      If mbMfITLayout And autECLPS.GetText(3, 25, 9) <> "A E G O N" Then
+            'IT Layout
+            'set Row & Col values
+40          iStartRow = 9
+50          iEndRow = 21
+60          iStartCol = 17
+70          iColLength = 32
+80          iMoreRow = 3
+'90          iMoreCol = 71  'Satya 01.06.2015 - Changed under P3576
+90          iMoreCol = 74
+100     Else
+            'Business Layout
+            'set Row & Col values
+110         iStartRow = 11
+120         iEndRow = 20
+130         iStartCol = 27
+140         iColLength = 54
+150         iMoreRow = 23
+160         iMoreCol = 71
+170     End If
+    
+        Call AddWaitTime
+        'Loop through pages
+180     Do
+            'Increment Page Count
+190         iPageCount = iPageCount + 1
+    
+            'PageDown if required
+200         If iPageCount > 1 Then
+210             Call seMfr.FKeyNext(fnKeyF8)
+220         End If
+    
+            'Loop through all rows
+230         For iRowCount = iStartRow To iEndRow
+                'Get Row Text
+'240             sText = Trim(seMfr.GetText(iRowCount, iStartCol, iColLength))
+    
+                'Exit For Loop if Blank
+250             If sText = "" Then
+260                 Exit For
+270             End If
+    
+                'Else add Row Text to Array
+280             ReDim Preserve saryList(0 To iArrayCount)
+290             saryList(iArrayCount) = sText
+    
+                'increment Array Counter
+300             iArrayCount = iArrayCount + 1
+310         Next iRowCount
+'320     Loop While seMfr.GetText(iMoreRow, iMoreCol, 1) = "+"
+    
+        'PageUp if required
+330     Do While iPageCount > 1
+340         Call seMfr.FKeyNext(fnKeyF7)
+350         iPageCount = iPageCount - 1
+360     Loop
+    
+    
+        'Return the Array
+370     GetMfApplications = saryList
+    
+    End Function
+    
+    
+    Private Function InitialiseGlobalArrays()
+10      masMenu(0) = "ARPSL"
+20      masMenu(1) = "AUTHE"
+30      masMenu(2) = "BTOTE"
+40      masMenu(3) = "BUSDE"
+50      masMenu(4) = "BYCDA"
+60      masMenu(5) = "BYGDA"
+70      masMenu(6) = "BYGDC"
+80      masMenu(7) = "BYIPA"
+90      masMenu(8) = "BYLAA"
+100     masMenu(9) = "BYRBA"
+110     masMenu(10) = "BYRBC"
+120     masMenu(11) = "BYSDA"
+130     masMenu(12) = "CES1L"
+140     masMenu(13) = "CES2E"
+150     masMenu(14) = "CHADA"
+160     masMenu(15) = "CHADD"
+170     masMenu(16) = "CLNLA"
+180     masMenu(17) = "CLNPD"
+190     masMenu(18) = "COAGE"
+200     masMenu(19) = "DCSRC"
+210     masMenu(20) = "DPAYC"
+220     masMenu(21) = "DOCSE"
+230     masMenu(22) = "ECHGL"
+240     masMenu(23) = "ETVDE"
+250     masMenu(24) = "GPCNA"
+260     masMenu(25) = "GPCNE"
+270     masMenu(26) = "GPCSE"
+280     masMenu(27) = "GPHFC"
+290     masMenu(28) = "IAIRE"
+300     masMenu(29) = "LIFEL"
+310     masMenu(30) = "LSSWD"
+320     masMenu(31) = "MAINM"
+330     masMenu(32) = "MVRFL"
+340     masMenu(33) = "NWACA"
+350     masMenu(34) = "NWACC"
+360     masMenu(35) = "NWACE"
+370     masMenu(36) = "NWADA"
+380     masMenu(37) = "NWADC"
+390     masMenu(38) = "NWADE"
+400     masMenu(39) = "NWAPA"
+410     masMenu(40) = "NWCCA"
+420     masMenu(41) = "NWCCC"
+430     masMenu(42) = "NWCCE"
+440     masMenu(43) = "NWDCD"
+450     masMenu(44) = "NWICA"
+460     masMenu(45) = "NWICC"
+470     masMenu(46) = "NWICE"
+480     masMenu(47) = "NWPBA"
+490     masMenu(48) = "NWPBC"
+500     masMenu(49) = "NWPBE"
+510     masMenu(50) = "PABOE"
+520     masMenu(51) = "PAIPC"
+530     masMenu(52) = "PAIPE"
+540     masMenu(53) = "PAPFE"
+550     masMenu(54) = "PAWPE"
+560     masMenu(55) = "PFCRE"
+570     masMenu(56) = "PPETA"
+580     masMenu(57) = "PPPDR"
+590     masMenu(58) = "PPPIR"
+600     masMenu(59) = "PPPPM"
+610     masMenu(60) = "PPPRR"
+620     masMenu(61) = "PRDSA"
+630     masMenu(62) = "PROTE"
+640     masMenu(63) = "PSALL"
+650     masMenu(64) = "PSLAL"
+660     masMenu(65) = "PSLMA"
+670     masMenu(66) = "PSLME"
+680     masMenu(67) = "PSLML"
+690     masMenu(68) = "PSWLC"
+700     masMenu(69) = "PSWLE"
+710     masMenu(70) = "PSWTE"
+720     masMenu(71) = "PUPPA"
+730     masMenu(72) = "PUPRA"
+740     masMenu(73) = "PUPSE"
+750     masMenu(74) = "RCARL"
+760     masMenu(75) = "RCTTE"
+770     masMenu(76) = "RCTTL"
+780     masMenu(77) = "RELGA"
+790     masMenu(78) = "RELNA"
+800     masMenu(79) = "RELPA"
+810     masMenu(80) = "RENAL"
+820     masMenu(81) = "RENUE"
+830     masMenu(82) = "RESVE"
+840     masMenu(83) = "RNSTA"
+850     masMenu(84) = "RTA1L"
+860     masMenu(85) = "RTAAA"
+870     masMenu(86) = "RTACL"
+880     masMenu(87) = "RTADD"
+890     masMenu(88) = "RTASD"
+900     masMenu(89) = "RTAVL"
+910     masMenu(90) = "RTTUA"
+920     masMenu(91) = "SBDBA"
+930     masMenu(92) = "SBDCA"
+940     masMenu(93) = "SBDFA"
+950     masMenu(94) = "SBDGA"
+960     masMenu(95) = "SBDGC"
+970     masMenu(96) = "SBDIA"
+980     masMenu(97) = "SBDLA"
+990     masMenu(98) = "SBPFL"
+1000        masMenu(99) = "SBPPL"
+1010        masMenu(100) = "SDAGA"
+1020        masMenu(101) = "SDICA"
+1030        masMenu(102) = "SDINA"
+1040        masMenu(103) = "SDPRA"
+1050        masMenu(104) = "SDSDA"
+1060        masMenu(105) = "SIPPE"
+1070        masMenu(106) = "SMADE"
+1080        masMenu(107) = "SMCME"
+1090        masMenu(108) = "SPCFL"
+1100        masMenu(109) = "SPCPL"
+1110        masMenu(110) = "SPOLL"
+1120        masMenu(111) = "SSAPA"
+1130        masMenu(112) = "SSBSA"
+1140        masMenu(113) = "SVBHL"
+1150        masMenu(114) = "SVBPA"
+1160        masMenu(115) = "SVBPE"
+1170        masMenu(116) = "TVDYE"
+1180        masMenu(117) = "TVFDE"
+1190        masMenu(118) = "TVFVE"
+1200        masMenu(119) = "TVGDE"
+1210        masMenu(120) = "TVGDL"
+1220        masMenu(121) = "TVPHE"
+1230        masMenu(122) = "TVPLA"
+1240        masMenu(123) = "TVRCC"
+1250        masMenu(124) = "TVRCE"
+1260        masMenu(125) = "TVURA"
+1270        masMenu(126) = "TVURL"
+1280        masMenu(127) = "UMEMA"
+1290        masMenu(128) = "UMEMD"
+1300        masMenu(129) = "USERA"
+1310        masMenu(130) = "USERD"
+1320        masMenu(131) = "VPRIC"
+1330        masMenu(132) = "VPRIL"
+1340        masMenu(133) = "VPSIC"
+1345        masMenu(134) = "SBPJL"  'ST 05.08.2016 - Added under P3576b-WPI
+1346        masMenu(135) = "SBPME"  'ST 27.09.2016
+    
+1350        masSlash(0, 0) = "/ACC-ALT,"
+1360        masSlash(1, 0) = "[eraseeof]"
+1370        masSlash(0, 1) = "/ADDR-MOD,"
+1380        masSlash(1, 1) = "[eraseeof]"
+1390        masSlash(0, 2) = "/ADDR-VIEW,"
+1400        masSlash(1, 2) = "[eraseeof]"
+1410        masSlash(0, 3) = "/B-UNIT-SUMMARY,"
+1420        masSlash(1, 3) = "[eraseeof]"
+1430        masSlash(0, 4) = "/EMP,"
+1440        masSlash(1, 4) = "[eraseeof]"
+1450        masSlash(0, 5) = "/ER-ACCTS-MOD,"
+1460        masSlash(1, 5) = "AC[eraseeof]"
+1470        masSlash(0, 6) = "/ER-ACCTS-MOD,"
+1480        masSlash(1, 6) = "P[eraseeof]"
+1490        masSlash(0, 7) = "/ER-ACCTS-VIEW,"
+1500        masSlash(1, 7) = "AC[eraseeof]"
+1510        masSlash(0, 8) = "/ER-ACCTS-VIEW,"
+1520        masSlash(1, 8) = "P[eraseeof]"
+1530        masSlash(0, 9) = "/ER-ADDR-VIEW,"
+1540        masSlash(1, 9) = "[eraseeof]"
+1550        masSlash(0, 10) = "/ER-BASIS-VIEW,"
+1560        masSlash(1, 10) = "1[eraseeof]"
+1570        masSlash(0, 11) = "/ER-BASIS-VIEW,"
+1580        masSlash(1, 11) = "CN[eraseeof]"
+1590        masSlash(0, 12) = "/ER-BASIS-VIEW,"
+1600        masSlash(1, 12) = "1[eraseeof]"
+1610        masSlash(0, 13) = "/ER-BASIS-VIEW,"
+1620        masSlash(1, 13) = "R[eraseeof]"
+1630        masSlash(0, 14) = "/ER-DETS-MOD,"
+1640        masSlash(1, 14) = "E[eraseeof]"
+1650        masSlash(0, 15) = "/ER-DETS-VIEW,"
+1660        masSlash(1, 15) = "1[eraseeof]"
+1670        masSlash(0, 16) = "/ER-DETS-VIEW,"
+1680        masSlash(1, 16) = "E[eraseeof]"
+1690        masSlash(0, 17) = "IDLXQ"
+1700        masSlash(1, 17) = "[eraseeof]"
+1710        masSlash(0, 18) = "/JOURNAL"
+1720        masSlash(1, 18) = "[eraseeof]"
+1730        masSlash(0, 19) = "/POL,"
+1740        masSlash(1, 19) = ",A[eraseeof]"
+1750        masSlash(0, 20) = "/POL,"
+1760        masSlash(1, 20) = ",B1[eraseeof]"
+1770        masSlash(0, 21) = "/POL,"
+1780        masSlash(1, 21) = ",B2[eraseeof]"
+1790        masSlash(0, 22) = "/POL,"
+1800        masSlash(1, 22) = ",C[eraseeof]"
+1810        masSlash(0, 23) = "/POL,"
+1820        masSlash(1, 23) = ",HD[eraseeof]"
+1830        masSlash(0, 24) = "/POL,"
+1840        masSlash(1, 24) = ",L[eraseeof]"
+1850        masSlash(0, 25) = "/POL,"
+1860        masSlash(1, 25) = ",S[eraseeof]"
+1870        masSlash(0, 26) = "/POL,"
+1880        masSlash(1, 26) = ",U[eraseeof]"
+1890        masSlash(0, 27) = "/PP-CC"
+1900        masSlash(1, 27) = "[eraseeof]"
+1910        masSlash(0, 28) = "/RAW-QUOTES,START"
+1920        masSlash(1, 28) = "[eraseeof]"
+1930        masSlash(0, 29) = "/RX-US,"
+1940        masSlash(1, 29) = "[eraseeof]"
+1950        masSlash(0, 30) = "/SUSPENSE,"
+1960        masSlash(1, 30) = "[eraseeof]"
+1970        masSlash(0, 31) = "/SWITCH,"
+1980        masSlash(1, 31) = "[eraseeof]"
+1990        masSlash(0, 32) = "/SWITCH-ADD"
+2000        masSlash(1, 32) = "[eraseeof]"
+2010        masSlash(0, 33) = "/TITLE,"
+2020        masSlash(1, 33) = ",T[eraseeof]"
+2030        masSlash(0, 34) = "/TITLE-VIEW,"
+2040        masSlash(1, 34) = "L[eraseeof]"
+2050        masSlash(0, 35) = "/UL-PRINT-VIEW,"
+2060        masSlash(1, 35) = "[eraseeof]"
+2070        masSlash(0, 36) = "/VPR-ADD"
+2080        masSlash(1, 36) = "[eraseeof]"
+2090        masSlash(0, 37) = "/VPR-VIEW,"
+2100        masSlash(1, 37) = ",A[eraseeof]"
+2110        masSlash(0, 38) = "/VPR-VIEW,"
+2120        masSlash(1, 38) = ",P[eraseeof]"
+2130        masSlash(0, 39) = "/VPR-ARC-VIEW,"
+2140        masSlash(1, 39) = ",A[eraseeof]"
+2150        masSlash(0, 40) = "/VPR-ARC-VIEW,"
+2160        masSlash(1, 40) = ",P[eraseeof]"
+    
+    End Function
+    
+    '------------------------------------------------------------------------
+    'Comments:      : Checks if PCOMM Session is requesting a change of
+    '                 the user Password
+    'Arguments:     : None
+    'Returns        : Boolean        True on success, False on error
+    '                                Code execution stopped on interruption
+    '
+    'Date             Developer                  Action
+    '------------------------------------------------------------------------
+    '02/02/2007       Pedrog Ichikawa-Bryant     Created
+    '------------------------------------------------------------------------
+    Public Function bCheckPass() As Boolean
+    
+'10      If autECLPS.GetText(3, 26, 15) = "Change Password" Then
+20          bCheckPass = True
+30      Else
+40          bCheckPass = False
+50      End If
+60      Exit Function
+    
+    End Function
+    
+    '------------------------------------------------------------------------
+    'Comments:      : Checks if PCOMM Session is locked out
+    'Arguments:     : None
+    'Returns        : Boolean        True on success, False on error
+    '                                Code execution stopped on interruption
+    '
+    'Date             Developer                  Action
+    '------------------------------------------------------------------------
+    '02/02/2007       Pedrog Ichikawa-Bryant     Created
+    '------------------------------------------------------------------------
+    Public Function bCheckLock() As Boolean
+    
+'10      If autECLPS.GetText(11, 6, 14) = "Enter password" Then
+20          bCheckLock = True
+30      Else
+40          bCheckLock = False
+50      End If
+60      Exit Function
+    
+    End Function
+    
+    '------------------------------------------------------------------------
+    'Comments:      : Emulates pressing "Enter" then waits until PCOMM
+    '                 Session window completes refresh of display window
+    'Arguments:     : None
+    '
+    'Date             Developer                  Action
+    '------------------------------------------------------------------------
+    '02/02/2007       Pedrog Ichikawa-Bryant     Created
+    '11/05/2009       Luke Mooney                Amended
+    '22/02/2010       Pedrog Ichikawa-Bryant     Amended to call
+    '                                            ScreenDumpToFile before and
+    '                                            after updates if
+    '                                            gbIS_TESTING set to True
+    '------------------------------------------------------------------------
+    Public Sub EnterNext(Optional ByVal Row As Long, Optional ByVal Col As Long)
+    
+    On Error GoTo ErrorHandler
+                         
+10      If gbIS_TESTING Then
+20          ScreenDumpToFile sKeyString:="Enter"
+30      End If
+    
+        'Emulates pressing "Enter" in the PCOMM Session window
+'40      'autECLPS.SendKeys "[Enter]"
+    
+        'Waits until the Operator Information Area of the Session window
+        'indicates that the application is no longer being worked with
+'50      'autECLOIA.WaitForAppAvailable (glTimeOutLimit)
+        'Waits until the Operator Information Area of the Session window
+        'indicates that the connection is able to accept keyboard input
+'60      'autECLOIA.WaitForInputReady (glTimeOutLimit)
+
+
+        'RS 01.07.2015
+        'Sometimes MF (speacialy test environments) does not respond within time frame which cause macro run time issue
+        'to avoid such problem, below code added.
+        
+        'autECLOIA.WaitForAppAvailable (glTimeOutLimit)
+        'autECLOIA.WaitForInputReady (glTimeOutLimit)
+         
+        'autECLOIA.WaitForAppAvailable (glTimeOutLimit)
+        'autECLOIA.WaitForInputReady (glTimeOutLimit)
+         
+        'autECLOIA.WaitForAppAvailable (glTimeOutLimit)
+        'autECLOIA.WaitForInputReady (glTimeOutLimit)
+         
+        'autECLOIA.WaitForAppAvailable (glTimeOutLimit)
+        'autECLOIA.WaitForInputReady (glTimeOutLimit)
+         
+        'autECLOIA.WaitForAppAvailable (glTimeOutLimit)
+        'autECLOIA.WaitForInputReady (glTimeOutLimit)
+         
+        'autECLOIA.WaitForAppAvailable (glTimeOutLimit)
+        'autECLOIA.WaitForInputReady (glTimeOutLimit)
+    
+70      If gbIS_TESTING Then
+80          ScreenDumpToFile sKeyString:="Enter", bBefore:=False
+90      End If
+    
+    
+100 Exit Sub
+ErrorHandler:
+110 If IsMacroDeveloper(UCase(Environ("UserName"))) Then
+120 Stop
+130 Resume
+140 End If
+    
+150 gErr.Number = Err.Number
+160 gErr.Description = Err.Description
+170 If Err.Source = gErr.Source Then
+180 gErr.Source = "EnterNext(Optional ByVal Row As Long, _ - " & Erl & ":" & Err.Source
+190 Else
+200 gErr.Source = "EnterNext(Optional ByVal Row As Long, _ - " & Erl
+210 End If
+220 gErr.Erl = Erl
+230 Err.Raise gErr.Number, gErr.Source, gErr.Description
+    End Sub
+    
+    '------------------------------------------------------------------------
+    'Comments:      : Emulates pressing one of the "F-" keys, then waits until
+    '                 PCOMM Session window completes refresh of display window
+    'Note:            Effectively replaces previous subs like F8Next, etc with
+    '                 one single routine - argument accepted in form of enum:
+    '                 eg. fnKeyF8 - or as number: eg. 8
+    'Arguments:     : fKey as fnKey              Enum of possible "F" Keys
+    '
+    'Date             Developer                  Action
+    '------------------------------------------------------------------------
+    '11/03/2008       Pedrog Ichikawa-Bryant     Created
+    '22/02/2010       Pedrog Ichikawa-Bryant     Amended to call
+    '                                            ScreenDumpToFile before and
+    '                                            after updates if
+    '                                            gbIS_TESTING set to True
+    '------------------------------------------------------------------------
+    Public Sub FKeyNext(ByVal fKey As fnKey)
+    On Error GoTo ErrorHandler
+    
+        Dim sText As String
+10      sText = "[pF" & fKey & "]"
+    
+        'Write a log of the Screen Dump
+20      If gbIS_TESTING Then
+30          ScreenDumpToFile sKeyString:=sText
+40      End If
+    
+        'Emulates pressing "Fx" in the PCOMM Session window
+        '(where "x" represents the number of the "F" key)
+'50      autECLPS.SendKeys sText
+    
+        'Waits until the Operator Information Area of the Session window
+        'indicates that the application is no longer being worked with
+'60      autECLOIA.WaitForAppAvailable (glTimeOutLimit)
+        'Waits until the Operator Information Area of the Session window
+        'indicates that the connection is able to accept keyboard input
+'70      autECLOIA.WaitForInputReady (glTimeOutLimit)
+    
+        'Write a log of the Screen Dump
+80      If gbIS_TESTING Then
+90          ScreenDumpToFile sKeyString:=sText, bBefore:=False
+100     End If
+    
+    
+110 Exit Sub
+ErrorHandler:
+120 If IsMacroDeveloper(UCase(Environ("UserName"))) Then
+130 Stop
+140 Resume
+150 End If
+    
+160 gErr.Number = Err.Number
+170 gErr.Description = Err.Description
+180 If Err.Source = gErr.Source Then
+190 gErr.Source = "FKeyNext(ByVal fKey As fnKey) - " & Erl & ":" & Err.Source
+200 Else
+210 gErr.Source = "FKeyNext(ByVal fKey As fnKey) - " & Erl
+220 End If
+230 gErr.Erl = Erl
+240 Err.Raise gErr.Number, gErr.Source, gErr.Description
+    End Sub
+    
+    '------------------------------------------------------------------------
+    'Comments:      : Within the PCOMM Session, Navigates from the AEGON
+    '                 Menu screen to the "/" Transactions screen
+    'Arguments:     : None
+    '
+    'Date             Developer                  Action
+    '------------------------------------------------------------------------
+    '02/02/2007       Pedrog Ichikawa-Bryant     Created
+    '14/01/2010       Paul Humphreys             Amended - Termination of MENU
+    '                                            transactions now ommitted as
+    '                                            it is the cause of the \gPROD
+    '                                            error.
+    '------------------------------------------------------------------------
+    Public Sub AegonMenuToSlash()
+    On Error GoTo ErrorHandler
+    
+    
+    '    'Sets the cursor position to the "SELAS MENU Transactions"
+    '    'option then terminates the current session
+    '    Me.SearchText "SELAS MENU"
+    '    autECLPS.SetCursorPos glRow, glCol - 3
+    '    autECLPS.SendKeys "T"
+    '    Me.EnterNext
+        'autECLPS.WaitForString "terminated."
+        'Needs to be set for Production users as the boolean is used
+        'as a check in ToggleScreenType -
+        'if this is not set to True the macro will attempt to toggle
+        'as if in a TEST, QUAL or MACRO environment...
+    
+10      mbStandardToggle = True
+    
+15      Call AddWaitTime 'ST 05.08.2016 - Added under P3576b-WPI
+    
+        'Sets the cursor position to the "SELAS SLASH TRANSACTIONS"
+        'option then terminates the current session
+'20      Me.SearchText "SELAS SLASH"
+'30      autECLPS.SetCursorPos glRow, glCol - 3
+'40      autECLPS.SendKeys "T"
+50      Me.EnterNext
+        'autECLPS.WaitForString "terminated."
+    
+60      Me.EnterNext
+70      mbSlash = True
+80      Exit Sub
+    
+    
+90  Exit Sub
+ErrorHandler:
+100 If IsMacroDeveloper(UCase(Environ("UserName"))) Then
+110 Stop
+120 Resume
+130 End If
+    
+140 gErr.Number = Err.Number
+150 gErr.Description = Err.Description
+160 If Err.Source = gErr.Source Then
+170 gErr.Source = "AegonMenuToSlash() - " & Erl & ":" & Err.Source
+180 Else
+190 gErr.Source = "AegonMenuToSlash() - " & Erl
+200 End If
+210 gErr.Erl = Erl
+220 Err.Raise gErr.Number, gErr.Source, gErr.Description
+    End Sub
+    
+        '------------------------------------------------------------------------
+        'Comments:      : Within the PCOMM Session, Navigates from the AEGON
+        '                 Menu screen to a selected Environment
+        'Arguments:     : None
+        '
+        'Assumptions:   : gbMfITLayout is known (Default=False=Bussiness Layout)
+        '
+        'Date             Developer                  Action
+        '------------------------------------------------------------------------
+        '07/12/2007       Luke Mooney                Created
+        '------------------------------------------------------------------------
+        Public Function AegonMenuToEnvironment(ByVal sEnvironment As String, _
+                                         ByVal lPageNo As Long) As Long
+        Const sProcNameLocal    As String = "Session.AegonMenuToEnvironment"
+        Dim Row                 As Long
+        Dim Col                 As Long
+        Dim lPageCount          As Long
+    
+    
+10          gsProcName = sProcNameLocal
+    
+20          Row = 1
+30          Col = 1
+    
+35          lPageCount = 1  'Satya 02.06.2015
+40          Do While lPageCount < lPageNo
+50              Call seMfr.FKeyNext(fnKeyF8)
+            lPageCount = lPageCount + 1  'Added on 21/02/2012
+60          Loop
+    
+            'if the argument sEnvironment contains the string "SELAS" then
+            'user has selected a Production environment - therefore need to
+            'use appropriate code for switching between MENU and SLASH
+            'Transactions - Set Module level Boolean appropriately so that
+            'this is on record:
+70          If InStr(1, UCase(sEnvironment), "SELAS") > 0 Then
+80              mbStandardToggle = True
+90          Else
+100             mbStandardToggle = False
+110         End If
+    
+            'Sets the cusor position to the requested Environment String
+            'option then presses "Enter"
+'120         If autECLPS.SearchText(sEnvironment, 1, Row, Col) = False Then
+130             Call Err.Raise(Number:=39999, _
+                                Source:=gsProcName, _
+                                Description:="Unable to find Requested Environment")
+                    'eCEMFDevRegionNotFound
+140         End If
+    
+150         If mbMfITLayout Then
+160         If Col = 5 Then
+'170             autECLPS.SetCursorPos Row, Col - 3
+180             Else
+'190             autECLPS.SetCursorPos Row, Col - 15
+200             End If
+210         Else
+'220             autECLPS.SetCursorPos Row, Col - 3
+230         End If
+'240         autECLPS.SendKeys "t"
+    
+250         Call EnterNext
+    
+260         bNotCheckLen = True
+'270         autECLPS.WaitForString "Session(s) terminated", 22, 8, 5000
+'280         autECLPS.SendKeys "s" 'added to start sesssion as EnterNext will move cursor position
+        '    If mbMfITLayout Then
+        '        autECLPS.SetCursorPos Row, Col - 15
+        '    Else
+        '        autECLPS.SetCursorPos Row, Col - 3
+        '    End If
+    
+290         Call EnterNext
+300         bNotCheckLen = False
+    
+        End Function
+    '''
+    ''''------------------------------------------------------------------------
+    ''''Comments:      : Within the PCOMM Session, Navigates from the AEGON
+    ''''                 Menu screen to a selected Environment
+    ''''Arguments:     : None
+    ''''
+    ''''Assumptions:   : gbMfITLayout is known (Default=False=Bussiness Layout)
+    ''''
+    ''''Date             Developer                  Action
+    ''''------------------------------------------------------------------------
+    ''''07/12/2007       Luke Mooney                Created
+    ''''------------------------------------------------------------------------
+    '''Public Function AegonMenuToEnvironment(ByVal sEnvironment As String, _
+    '''                                 ByVal lPageNo As Long) As Long
+    '''Const sProcNameLocal    As String = "Session.AegonMenuToEnvironment"
+    '''Dim Row                 As Long
+    '''Dim Col                 As Long
+    '''Dim lPageCount          As Long
+    '''
+    '''    strProcName = sProcNameLocal
+    '''
+    '''    Row = 1
+    '''    Col = 1
+    '''
+    '''    Do While lPageCount < lPageNo
+    '''        Call seMfr.FKeyNext(fnKeyF8)
+    '''    Loop
+    '''
+    '''    'if the argument sEnvironment contains the string "SELAS" then
+    '''    'user has selected a Production environment - therefore need to
+    '''    'use appropriate code for switching between MENU and SLASH
+    '''    'Transactions - Set Module level Boolean appropriately so that
+    '''    'this is on record:
+    '''    If InStr(1, UCase(sEnvironment), "SELAS") > 0 Then
+    '''        mbStandardToggle = True
+    '''    Else
+    '''        mbStandardToggle = False
+    '''    End If
+    '''
+    '''    'Sets the cusor position to the requested Environment String
+    '''    'option then presses "Enter"
+    '''    If autECLPS.SearchText(sEnvironment, 1, Row, Col) = False Then
+    '''        Call Err.Raise(Number:=39999, _
+    '''                        Source:=gsProcName, _
+    '''                        Description:="Unable to find Requested Environment")
+    '''            'eCEMFDevRegionNotFound
+    '''    End If
+    '''
+    '''    If mbMfITLayout Then
+    '''        autECLPS.SetCursorPos Row, Col - 15
+    '''    Else
+    '''        autECLPS.SetCursorPos Row, Col - 3
+    '''    End If
+    '''    autECLPS.SendKeys "t"
+    '''
+    '''    Call EnterNext
+    '''
+    '''    autECLPS.WaitForString "Session(s) terminated", 22, 8, 5000
+    '''
+    ''''    If mbMfITLayout Then
+    ''''        autECLPS.SetCursorPos Row, Col - 15
+    ''''    Else
+    ''''        autECLPS.SetCursorPos Row, Col - 3
+    ''''    End If
+    '''
+    '''    Call EnterNext
+    '''
+    '''End Function
+    
+    
+    '------------------------------------------------------------------------
+    'Comments:      : Causes the PCOMM Session to toggle between Selas Menu
+    '                 Transactions and Selas Slash Transactions
+    'Arguments:     : None
+    '
+    'Date             Developer                  Action
+    '------------------------------------------------------------------------
+    '02/02/2007       Pedrog Ichikawa-Bryant     Created
+    '16/01/2008       Luke Mooney                Amended
+    '12/03/2008       Pedrog Ichikawa-Bryant     Amended to use FKeyNext
+    '05/10/2009       Pedrog Ichikawa-Bryant     Modified for non standard
+    '                                            environments (e.g. QUAL)
+    '------------------------------------------------------------------------
+    Public Sub ToggleScreenType()
+    On Error GoTo ErrorHandler
+    
+        'If the PCOMM Session is currently displaying a Selas Slash
+        'Transactions screen, then switches to Selas Menu Transactions,
+        'Otherwise switches TO Selas Slash Transactions
+    
+'10      autECLPS.SendKeys "[Home]"
+'20      If autECLPS.CursorPosRow = 1 Then
+30          If mbStandardToggle Then
+'40              autECLPS.SendKeys "[EraseEOF]\gPROD" '"/Menu "
+50          Else
+'60              autECLPS.SendKeys "[EraseEOF]/elcrd " '(dummy string)
+70              EnterNext
+'80              autECLPS.SendKeys "[Clear][Home][EraseEOF]Menu "
+90          End If
+100         mbSlash = False
+110     Else
+120         If mbStandardToggle Then
+130             Call Me.FKeyNext(6)
+140             Call Me.FKeyNext(12)
+    
+'150             autECLPS.SetCursorPos 2, 49
+'160             autECLPS.SendKeys "[EraseEOF]\gBUR1" '"// "
+170         Else
+'180             autECLPS.SendKeys "QUITQ"
+190         End If
+200         mbSlash = True
+210     End If
+    
+        'Emulates pressing "Enter" in the PCOMM Session window
+220     EnterNext
+    
+230     Exit Sub
+    
+    
+240 Exit Sub
+ErrorHandler:
+250 If IsMacroDeveloper(UCase(Environ("UserName"))) Then
+260 Stop
+270 Resume
+280 End If
+    
+290 gErr.Number = Err.Number
+300 gErr.Description = Err.Description
+310 If Err.Source = gErr.Source Then
+320 gErr.Source = "ToggleScreenType() - " & Erl & ":" & Err.Source
+330 Else
+340 gErr.Source = "ToggleScreenType() - " & Erl
+350 End If
+360 gErr.Erl = Erl
+370 Err.Raise gErr.Number, gErr.Source, gErr.Description
+    End Sub
+    
+    '------------------------------------------------------------------------
+    'Comments:      : Checks if PCOMM Session is currently in a Selas Slash
+    '                 Transactions Screen or not
+    'Preconditions  : Session MUST be in either SLASH or MENU prior to this
+    '                 function being called.
+    'Arguments:     : None
+    'Returns        : Boolean        True on success, False on error
+    '                                Code execution stopped on interruption
+    '
+    'Date             Developer                  Action
+    '------------------------------------------------------------------------
+    '02/02/2007       Pedrog Ichikawa-Bryant     Created
+    '------------------------------------------------------------------------
+    Public Function bCheckSlash() As Boolean
+    
+'10      autECLPS.SendKeys "[Home]"
+    
+'20      If autECLPS.CursorPosRow <> 1 Then
+30          bCheckSlash = False
+40      Else
+50          bCheckSlash = True
+60      End If
+70      Exit Function
+    
+    End Function
+    
+    '------------------------------------------------------------------------
+    'Comments:      : Checks if PCOMM Session is currently in the Broadcast
+    '                 Screen (which comes up on initial Login) or not
+    'Arguments:     : None
+    'Returns        : Boolean        True on success, False on error
+    '                                Code execution stopped on interruption
+    '
+    'Date             Developer                  Action
+    '------------------------------------------------------------------------
+    '02/02/2007       Pedrog Ichikawa-Bryant     Created
+    '------------------------------------------------------------------------
+    Public Function bCheckBroadcast() As Boolean
+    
+'10      If autECLPS.GetText(21, 5, 23) = "Press ENTER to continue" Then
+20          bCheckBroadcast = True
+30      Else
+40          bCheckBroadcast = False
+50      End If
+    
+60      Exit Function
+    
+    End Function
+    
+    '------------------------------------------------------------------------
+    'Comments:      : Checks if PCOMM Session is currently in the AEGON Menu
+    '                 Screen (not meaning Selas Menu Transactions...)
+    'Arguments:     : None
+    'Returns        : Boolean        True on success, False on error
+    '                                Code execution stopped on interruption
+    '
+    'Date             Developer                  Action
+    '------------------------------------------------------------------------
+    '02/02/2007       Pedrog Ichikawa-Bryant     Created
+    '05/10/2009       Pedrog Ichikawa-Bryant     Modified for IT Users
+    '------------------------------------------------------------------------
+    Public Function bCheckMenu() As Boolean
+    
+'10      If autECLPS.GetText(3, 25, 9) = "A E G O N" Then
+20       If gsOffshoreUser = "Offshore Use" Then
+30                  mbMfITLayout = True
+40                   bCheckMenu = True
+50               Else
+60              mbMfITLayout = False
+70               bCheckMenu = True
+80              End If
+90      Else
+'100         If autECLPS.GetText(3, 23, 10) = "AEGON Main" Then
+110             bCheckMenu = True
+120             mbMfITLayout = True
+130         Else
+140             bCheckMenu = False
+150         End If
+160     End If
+    
+170     Exit Function
+    
+    End Function
+    
+    '------------------------------------------------------------------------
+    'Comments:      : Navigates to the Screen described by the argument
+    '                 sMenu1
+    'Assumptions:   : SE Mainframe session is set to Selas Menu Transactions
+    'Arguments:     : sMenu1 as String    Enumeration of the Menu Screen
+    '                                     Name to which the user wishes to
+    '                                     navigate
+    '
+    'Date             Developer                  Action
+    '------------------------------------------------------------------------
+    '09/02/2007       Pedrog Ichikawa-Bryant     Created
+    '10/02/2010       Pedrog Ichikawa-Bryant     Changed to check if screen
+    '                                            has updated correctly - if
+    '                                            not then to F6 and try again
+    '                                            once - if still fails then
+    '                                            raises an error
+    '10/02/2010       Pedrog Ichikawa-Bryant     First test run revealed that
+    '                                            need to include F12 as well
+    '                                            as F6 in order to ensure
+    '                                            navigation to required
+    '                                            screen
+    '------------------------------------------------------------------------
+    Public Sub navMenu(sMenu1 As sMenu)
+    On Error GoTo ErrorHandler
+    
+        'gsMenu = sMenu1
+        Dim strMenu As String
+        Dim lCount As Long
+    
+10      strMenu = masMenu(sMenu1)
+    
+20      For lCount = 1 To 2
+'30          autECLPS.SendKeys "[Home]"
+'40          autECLPS.SendKeys LCase(strMenu)
+50          EnterNext
+    
+            'check if screen updated correctly:
+'60          If (autECLPS.GetText(2, 2, 4) & autECLPS.GetText(2, 7, 1) = UCase(strMenu)) And _
+'                Not (autECLPS.CursorPosCol = 49 And autECLPS.CursorPosRow = 2) Then
+    
+70              Exit For
+    
+80          Else
+    
+                'update failed so on first attempt only:
+90              If lCount = 1 Then
+100                 Call FKeyNext(fnKeyF6)
+110                 Call FKeyNext(fnKeyF12)
+                    'and retry once
+120             Else
+                    'update failed despite retry
+                    'so raise an error:
+130                 Err.Raise 50026, "Session.navMenu", "Could not navigate to screen"
+140             End If 'lCount = 1
+    
+150         End If  'correct screen
+    
+160     Next
+    
+170     Exit Sub
+    
+    
+180 Exit Sub
+ErrorHandler:
+190 If IsMacroDeveloper(UCase(Environ("UserName"))) Then
+'200 Stop
+'210 Resume
+220 End If
+    
+230 gErr.Number = Err.Number
+240 gErr.Description = Err.Description
+250 If Err.Source = gErr.Source Then
+260 gErr.Source = "navMenu(sMenu1 As sMenu) - " & Erl & ":" & Err.Source
+270 Else
+280 gErr.Source = "navMenu(sMenu1 As sMenu) - " & Erl
+290 End If
+300 gErr.Erl = Erl
+310 Err.Raise gErr.Number, gErr.Source, gErr.Description
+    End Sub
+    
+    
+    '------------------------------------------------------------------------
+    'Comments:      : Navigates to the Screen described by the argument
+    '                 sMenu1, using the details given by the argument
+    '                 sDetails
+    'Assumptions:   : SE Mainframe session is set to Selas Menu Transactions
+    'Note To User   : The argument sDetails can ONLY be used for data that
+    '                 the Heritage Mainframe will accept being typed in to
+    '                 the top right hand side of the screen eg. Policy Number
+    '                 for the GPCNE screen, or Policy Number/TV Number for
+    '                 TVGDE - Strings that do not go with the screen Name
+    '                 used will still be parsed to the PCOMM Session - but
+    '                 this could result in erratic behaviour! Please use
+    '                 with care
+    'Arguments:     : sMenu1 as String    Enumeration of the Menu Screen
+    '                                     Name to which the user wishes to
+    '                                     navigate
+    '                 sDetails as String  Details to be used in navigating to
+    '                                     the screen given by sMenu1
+    '
+    'Date             Developer                  Action
+    '------------------------------------------------------------------------
+    '09/02/2007       Pedrog Ichikawa-Bryant     Created
+    '10/02/2010       Pedrog Ichikawa-Bryant     Changed to check if screen
+    '                                            has updated correctly - if
+    '                                            not then to F6 and try again
+    '                                            once - if still fails then
+    '                                            raises an error
+    '                                            also added check that
+    '                                            sDetails carried over - if
+    '                                            not then raises an error
+    '10/02/2010       Pedrog Ichikawa-Bryant     First test run revealed that
+    '                                            need to include F12 as well
+    '                                            as F6 in order to ensure
+    '                                            navigation to required
+    '                                            screen
+    '------------------------------------------------------------------------
+    Public Sub navMenu2(sMenu1 As sMenu, sDetails As String)
+    On Error GoTo ErrorHandler
+    
+        'gsMenu = sMenu1
+        Dim strMenu As String
+        Dim lCount As Long
+    
+10      strMenu = masMenu(sMenu1)
+    
+        'code block to be executed twice at most:
+20      For lCount = 1 To 2
+    
+            'navigate to screen:
+'30          autECLPS.SendKeys "[Home]"
+'40          autECLPS.SendKeys LCase(strMenu)
+'50          autECLPS.SendKeys Left(sDetails & _
+                    "                              ", 30)
+60          EnterNext
+    
+            'check if screen updated correctly
+'70          If (autECLPS.GetText(2, 2, 4) & autECLPS.GetText(2, 7, 1) = UCase(strMenu)) And _
+'                Not (autECLPS.CursorPosCol = 49 And autECLPS.CursorPosRow = 2) Then
+    
+80              Exit For
+    
+90          Else
+    
+                'update failed so on first attempt only:
+100             If lCount = 1 Then
+110                 Call FKeyNext(fnKeyF6)
+120                 Call FKeyNext(fnKeyF12)
+                    'and retry once
+130             Else
+                    'update failed despite retry
+                    'so raise an error:
+140                 Err.Raise 50026, "Session.navMenu", "Could not navigate to screen"
+150             End If 'lCount = 1
+    
+160         End If 'correct screen
+    
+170     Next lCount
+    
+        'check if sDetails carried over properly:
+        'tab to top right where details should be displayed:
+'180     autECLPS.SetCursorPos 2, 2
+'190     autECLPS.SendKeys "[Tab][Tab]"
+    
+        'Check if text area is empty:
+'200     If Trim(autECLPS.GetText(GetLen:=10)) = "" Then
+    
+            'check if sDetails were supplied as an empty string:
+210         If sDetails <> "" Then
+                'raise an error
+220             Err.Raise 50029, "Session.navMenu2", "Screen update did not carry over details"
+230         Else
+                'sDetails were blank anyway
+240         End If 'sDetails <> ""
+    
+250     Else
+    
+            'text present in the expected area, so
+            'assume successful update
+    
+'260     End If 'Trim(autECLPS.GetText(GetLen:=10)) = ""
+    
+270     Exit Sub
+    
+    
+280 Exit Sub
+ErrorHandler:
+290 If IsMacroDeveloper(UCase(Environ("UserName"))) Then
+300 Stop
+310 Resume
+320 End If
+    
+330 gErr.Number = Err.Number
+340 gErr.Description = Err.Description
+350 If Err.Source = gErr.Source Then
+360 gErr.Source = "navMenu2(sMenu1 As sMenu, sDetails As String) - " & Erl & ":" & Err.Source
+370 Else
+380 gErr.Source = "navMenu2(sMenu1 As sMenu, sDetails As String) - " & Erl
+390 End If
+400 gErr.Erl = Erl
+410 Err.Raise gErr.Number, gErr.Source, gErr.Description
+    End Sub
+    
+    '------------------------------------------------------------------------
+    'Comments:      : Navigates to the Screen described by the argument
+    '                 sSlash1, using the number given by the argument
+    '                 sNumber - typically this would be the policy number,
+    '                 but may also be an employer number
+    'Assumptions:   : SE Mainframe session is set to Selas Slash Transactions
+    'Note To User   : The argument sNumber MUST be used for the relevant
+    '                 number - if navigating to /pol this should be the
+    '                 policy number - if navigating to the /Emp screen this
+    '                 should be the empolyer number...
+    '                 Please use with care
+    'Arguments:     : sSlash1 as String   Enumeration of the Slash Screen
+    '                                     Name to which the user wishes to
+    '                                     navigate
+    '                 sNumber as String   Relevant Number for the screen
+    '                                     given by sSlash1
+    '
+    'Date             Developer                  Action
+    '------------------------------------------------------------------------
+    '09/02/2007       Pedrog Ichikawa-Bryant     Created
+    '------------------------------------------------------------------------
+    Public Sub navSlash(ByVal sSlash1 As sSlash, Optional ByVal sNumber As String = "")
+    On Error GoTo ErrorHandler
+    
+        'gsSlash = sSlash1
+        Dim strSlash As String
+    
+10      strSlash = masSlash(0, sSlash1) & sNumber & masSlash(1, sSlash1)
+    
+    '    Select Case sSlash1
+    '    Case Is = sSlashAddrView
+    '        strSlash = "/Addr-View," & sNumber & " "
+    '    Case Is = sSlashBUnitSummary
+    '        strSlash = "/B-Unit-Summary "
+    '    Case Is = sSlashEmp
+    '        strSlash = "/emp," & sNumber & " "
+    '    Case Is = sSlashPolA
+    '        strSlash = "/pol," & sNumber & ",a "
+    '    Case Is = sSlashPolB1
+    '        strSlash = "/pol," & sNumber & ",b1 "
+    '    Case Is = sSlashPolB2
+    '        strSlash = "/pol," & sNumber & ",b2 "
+    '    Case Is = sSlashPolC
+    '        strSlash = "/pol," & sNumber & ",c "
+    '    Case Is = sSlashPolHD
+    '        strSlash = "/pol," & sNumber & ",hd "
+    '    Case Is = sSlashPolL
+    '        strSlash = "/pol," & sNumber & ",l "
+    '    Case Is = sSlashPolS
+    '        strSlash = "/pol," & sNumber & ",s "
+    '    Case Is = sSlashPolU
+    '        strSlash = "/pol," & sNumber & ",u "
+    '    Case Is = sSlashSwitchAdd
+    '        strSlash = "/switch-add"
+    '    Case Is = sSlashTitleViewT
+    '        strSlash = "/title-view," & sNumber & ",t "
+    '    Case Is = sSlashVprArcViewA
+    '        strSlash = "/vpr-arc-view," & sNumber & ",a "
+    '    Case Is = sSlashVprArcViewP
+    '        strSlash = "/vpr-arc-view," & sNumber & ",p "
+    '    Case Is = sSlashVprViewA
+    '        strSlash = "/vpr-view," & sNumber & ",a "
+    '    Case Is = sSlashVprViewP
+    '        strSlash = "/vpr-view," & sNumber & ",p "
+    '    End Select
+    
+'20      autECLPS.SendKeys "[Home]"
+'30      autECLPS.SendKeys strSlash
+    
+40      EnterNext
+    
+    
+    
+    
+50  Exit Sub
+ErrorHandler:
+60  If IsMacroDeveloper(UCase(Environ("UserName"))) Then
+70  Stop
+80  Resume
+90  End If
+    
+100 gErr.Number = Err.Number
+110 gErr.Description = Err.Description
+120 If Err.Source = gErr.Source Then
+130 gErr.Source = "navSlash(ByVal sSlash1 As sSlash, Optional ByVal sNumber As String = "") - " & Erl & ":" & Err.Source
+140 Else
+150 gErr.Source = "navSlash(ByVal sSlash1 As sSlash, Optional ByVal sNumber As String = "") - " & Erl
+160 End If
+170 gErr.Erl = Erl
+180 Err.Raise gErr.Number, gErr.Source, gErr.Description
+    End Sub
+    
+    '------------------------------------------------------------------------
+    'Comments:      : Disconnects from Session "A" PCOMM Session
+    'Arguments:     : None
+    '
+    'Date             Developer                  Action
+    '------------------------------------------------------------------------
+    '12/02/2007       Pedrog Ichikawa-Bryant     Created
+    '------------------------------------------------------------------------
+    Sub TerminateSession()
+    On Error GoTo ErrorHandler
+'10      Set autECLPS = Nothing
+'20      Set autECLOIA = Nothing
+30      mbConnected = False
+    
+40  Exit Sub
+ErrorHandler:
+50  If IsMacroDeveloper(UCase(Environ("UserName"))) Then
+60  Stop
+70  Resume
+80  End If
+    
+90  gErr.Number = Err.Number
+100 gErr.Description = Err.Description
+110 If Err.Source = gErr.Source Then
+120 gErr.Source = "TerminateSession - " & Erl & ":" & Err.Source
+130 Else
+140 gErr.Source = "TerminateSession - " & Erl
+150 End If
+160 gErr.Erl = Erl
+170 Err.Raise gErr.Number, gErr.Source, gErr.Description
+    End Sub
+    
+    '------------------------------------------------------------------------
+    'Comments:      : Retrieves Text from an area on screen specified by the
+    '                 arguments
+    'Arguments:     : lRow as Long        Row to start from
+    '                 lCol as Long        Column to start from
+    '                 lLen as Long        Length of String to be returned
+    '
+    'Date             Developer                  Action
+    '------------------------------------------------------------------------
+    '                                            Created
+    '------------------------------------------------------------------------
+'    Public Function GetText(Optional ByVal lRow As Long, _
+                            Optional ByVal lCol As Long, _
+                            Optional ByVal lLen As Long) As String
+10      If lRow + lCol + lLen = 0 Then
+'20          GetText = autECLPS.GetText
+30      Else
+'40          GetText = autECLPS.GetText(lRow, lCol, lLen)
+50      End If
+    End Function
+    
+    '------------------------------------------------------------------------
+    'Comments:      : Sends the Keystrokes to the PCOMM Session to type out
+    '                 the sequence of characters given by sText
+    '                 If lRow and/or lCol are provided the cursor position
+    '                 will be moved accordingly before the sequence of
+    '                 keystrokes is sent
+    'Arguments:     : lRow as Long        Row to start from
+    '                 lCol as Long        Column to start from
+    '                 lLen as Long        Length of String to be returned
+    '
+    'Date             Developer                  Action
+    '------------------------------------------------------------------------
+    '                                            Created
+    '------------------------------------------------------------------------
+'    Public Function SendKeys(ByVal sText As String, _
+                        Optional lRow As Long = 0, _
+                        Optional lCol As Long = 0)
+        Dim Row As Long
+        Dim Col As Long
+10      Row = lRow
+20      Col = lCol
+    
+'30      If lRow > autECLPS.NumRows Then
+'40          Err.Raise 30001, "Session.SendKeys()", "Row argument out of range"
+50      End If
+    
+'60      If lCol > autECLPS.NumCols Then
+'70          Err.Raise 30010, "Session.SendKeys()", "Column argument out of range"
+80      End If
+    
+90      If Row = 0 Then
+100         If Col = 0 Then
+'110             autECLPS.SendKeys sText
+120         Else
+'130             Row = autECLPS.CursorPosRow
+'140             autECLPS.SendKeys sText, Row, Col
+150         End If
+160     Else
+170         If Col = 0 Then
+'180             Col = autECLPS.CursorPosCol
+'190             autECLPS.SendKeys sText, Row, Col
+200         Else
+'210             autECLPS.SendKeys sText, Row, Col
+220         End If
+230     End If
+    
+    End Function
+    
+    '------------------------------------------------------------------------
+    'Comments:      : Searches for text (given by the sText argument) from
+    '                 the position given by the arguments lRow and lCol - the
+    '                 default position being (1,1) - in the direction given
+    '                 by the argument lDir.
+    '                 If search is successful then changes the values of the
+    '                 Global Variables glRow and glCol to match the position
+    '                 of the "found" string.
+    'Arguments:     : sText as String     String being searched for
+    '                 lDir as PsDir       pcSrchForward or pcSrchBackward
+    '                 lRow as Long        Row to start from
+    '                 lCol as Long        Column to start from
+    '
+    'Date             Developer                  Action
+    '------------------------------------------------------------------------
+    '                                            Created
+    '------------------------------------------------------------------------
+    'Public Function SearchText(ByVal sText As String, _
+    '                    Optional ByVal lDir As PsDir = pcSrchForward, _
+    '                    Optional ByVal lRow As Long = 1, _
+    '                    Optional ByVal lCol As Long = 1) As Boolean
+    '    Dim bResult As Boolean
+    '    Dim Row As Long, Col As Long
+    '    Row = lRow
+    '    Col = lCol
+    '    bResult = autECLPS.SearchText(sText, lDir, Row, Col)
+    '    If bResult Then
+    '        glRow = Row
+    '        glCol = Col
+    '    End If
+    '    SearchText = bResult
+    'End Function
+    
+    '------------------------------------------------------------------------
+    'Comments:      : Navigates to AEGON by exiting out of previous screens
+    'Assumptions:   : SE Mainframe session is signed in, and not on the
+    '                 Broadcast or the AEGON menu.
+    'Arguments:     : None
+    '
+    'Date             Developer                  Action
+    '------------------------------------------------------------------------
+    '26/09/2007       Luke Mooney                Created
+    '05/10/2009       Pedrog Ichikawa-Bryant     Modified to check whether IT
+    '                                            or Business Environment
+    '22/02/2010       Pedrog Ichikawa-Bryant     Amended to call
+    '                                            ScreenDumpToFile before and
+    '                                            after updates if
+    '                                            gbIS_TESTING set to True
+    '13/02/2012       Leanne Dalgleish           Added check for 'offshore user'
+    '                                            so that they can have the
+    '                                            'business look' but also choose
+    '                                            the environment
+    '
+    '------------------------------------------------------------------------
+    Public Sub navAegonMenu()
+    On Error GoTo ErrorHandler
+    
+        Dim bWaitComplete As Boolean
+    
+        'Code to log a ScreenDump:
+10      If gbIS_TESTING Then
+20          ScreenDumpToFile sKeyString:="[ATTN]"
+30      End If
+    
+'40      autECLPS.SendKeys "[ATTN]"      'Escape Key
+'50      autECLOIA.WaitForAppAvailable (glTimeOutLimit)
+'60      autECLOIA.WaitForInputReady (glTimeOutLimit)
+70      Do Until bWaitComplete
+'80          If autECLPS.WaitForString("A E G O N", 3, 25, 250) Then
+                'on Business version of AEGON Menu
+90               If gsOffshoreUser = "Offshore Use" Then
+100                 mbMfITLayout = True
+110                 bWaitComplete = True
+120              Else
+130             mbMfITLayout = False
+140             bWaitComplete = True
+150             End If
+160         Else
+'170             If autECLPS.WaitForString("AEGON Main", 3, 23, 250) Then
+                    'on IT version of AEGON Menu
+180                 mbMfITLayout = True
+190                 bWaitComplete = True
+200             Else
+                'not sure which version of Menu until wait complete...
+210                      mbMfITLayout = True
+220                 bWaitComplete = True
+    
+230             End If
+240         End If
+250     Loop
+    
+        'Code to log a ScreenDump:
+260     If gbIS_TESTING Then
+270         ScreenDumpToFile sKeyString:="[ATTN]", bBefore:=False
+280     End If
+    
+    
+290 Exit Sub
+ErrorHandler:
+300 If IsMacroDeveloper(UCase(Environ("UserName"))) Then
+310 Stop
+320 Resume
+330 End If
+    
+340 gErr.Number = Err.Number
+350 gErr.Description = Err.Description
+360 If Err.Source = gErr.Source Then
+370 gErr.Source = "navAegonMenu() - " & Erl & ":" & Err.Source
+380 Else
+390 gErr.Source = "navAegonMenu() - " & Erl
+400 End If
+410 gErr.Erl = Erl
+420 Err.Raise gErr.Number, gErr.Source, gErr.Description
+    End Sub
+    
+    Public Sub Handle_gProdError()
+    On Error GoTo ErrorHandler
+    '************************************************************************
+    'Comments       : Sub routine to perform workaround when IDEAL Menu is
+    '               inadvertently accessed
+    '
+    'Date             Developer                  Action
+    '************************************************************************
+    '19/01/2010       Paul Humphreys             Generated
+    '************************************************************************
+    
+        'Exit the IDEAL Menu
+'10      Call Me.SendKeys("[home]")
+'20      autECLOIA.WaitForInputReady (glTimeOutLimit)
+'30      Call Me.SendKeys("off")
+40      Call Me.EnterNext
+    
+        'Re-enter the main menu
+'50      Call Me.SendKeys("[home]")
+'60      autECLOIA.WaitForInputReady (glTimeOutLimit)
+'70      Call Me.SendKeys("menu")
+'80      autECLOIA.WaitForInputReady (glTimeOutLimit)
+90      Call Me.EnterNext
+    
+    
+100 Exit Sub
+ErrorHandler:
+110 If IsMacroDeveloper(UCase(Environ("UserName"))) Then
+120 Stop
+130 Resume
+140 End If
+    
+150 gErr.Number = Err.Number
+160 gErr.Description = Err.Description
+170 If Err.Source = gErr.Source Then
+180 gErr.Source = "Handle_gProdError() - " & Erl & ":" & Err.Source
+190 Else
+200 gErr.Source = "Handle_gProdError() - " & Erl
+210 End If
+220 gErr.Erl = Erl
+230 Err.Raise gErr.Number, gErr.Source, gErr.Description
+    End Sub
+    
+    
+    '------------------------------------------------------------------------
+    'Comments:      : Creates a string representing a dump of what is
+    '                 currently "on screen" in the Presentation Space of the
+    '                 Session window then calls modUtility.WriteMessageToLog
+    '
+    'Date             Developer                  Action
+    '------------------------------------------------------------------------
+    '10/02/2010       Pedrog Ichikawa-Bryant     Created
+    '------------------------------------------------------------------------
+    Private Sub ScreenDumpToFile(ByVal sKeyString As String, _
+    Optional ByVal bBefore As Boolean = True)
+    On Error GoTo ErrorHandler
+                        
+        'code for logging screen change
+        Dim sScreenText As String
+        Dim sText As String
+    
+        'Create header as string
+10      sText = "" & vbNewLine & "" & vbNewLine
+20      sText = sText & "##########################" & vbNewLine
+30      If bBefore Then
+40          sText = sText & "# Before                 #" & vbNewLine
+50      Else
+60          sText = sText & "# After                  #" & vbNewLine
+70      End If
+80      sText = sText & "# " & Left(sKeyString & "                       ", 23) & "#" & vbNewLine
+90      sText = sText & "##########################" & vbNewLine
+100     sText = sText & "" & vbNewLine
+    
+'110     sScreenText = Me.GetText
+120     Do Until Len(sScreenText) = 0
+130         sText = sText & Left(sScreenText, 80) & vbNewLine
+140         sScreenText = Mid(sScreenText, 81)
+150     Loop
+    
+160     sText = sText & "" & vbNewLine
+    
+170     Call modUtility.WriteMessageToLog(sText, sFilename:=gsSCREEN_DUMPS_FOLDER & Environ("UserName") & " Testing.log")
+    
+    
+180 Exit Sub
+ErrorHandler:
+190 If IsMacroDeveloper(UCase(Environ("UserName"))) Then
+200 Stop
+210 Resume
+220 End If
+    
+230 gErr.Number = Err.Number
+240 gErr.Description = Err.Description
+250 If Err.Source = gErr.Source Then
+260 gErr.Source = "ScreenDumpToFile(ByVal sKeyString As String, _ - " & Erl & ":" & Err.Source
+270 Else
+280 gErr.Source = "ScreenDumpToFile(ByVal sKeyString As String, _ - " & Erl
+290 End If
+300 gErr.Erl = Erl
+310 Err.Raise gErr.Number, gErr.Source, gErr.Description
+    End Sub
+    
+    
+    
+    
+    '------------------------------------------------------------------------
+    'List of Properties - Mostly Read Only from other modules
+    '
+    'Date             Developer                 Action
+    '------------------------------------------------------------------------
+    '14/03/2008       Pedrog Ichikawa-Bryant    Created
+    '------------------------------------------------------------------------
+    Public Property Get GetConnected() As Boolean
+      GetConnected = mbConnected
+20  End Property
+    
+    Public Property Get GetSlash() As Boolean
+        'redundant - should call bCheckSlash directly
+30      GetSlash = bCheckSlash
+40  End Property
+    
+    Public Property Get MenuCanNavigate() As Boolean
+50      MenuCanNavigate = mbMenuCanNavigate
+60  End Property
+    
+    '------------------------------------------------------------------------
+    'MenuCanNavigate will need to be set from other Class modules (for the
+    'relevant screens) - for example on the BUSDE screen it would depend on
+    'whether the screen had been scrolled down or not as to whether this
+    'property would be True or False...
+    '------------------------------------------------------------------------
+    Public Property Let MenuCanNavigate(bCan As Boolean)
+70      mbMenuCanNavigate = bCan
+80  End Property
+    
+    Public Property Get GetINMM() As Boolean
+90      GetINMM = mbINMM
+100 End Property
+    
+    Public Property Get GetDOLV() As Boolean
+110     GetDOLV = mbDOLV
+120 End Property
+    
+    '------------------------------------------------------------------------
+    'Comments:      : Searches for text (given by the sText argument) from
+    '                 the position given by the arguments lRow and lCol - the
+    '                 default position being (1,1) - in the direction given
+    '                 by the argument lDir.
+    '                 If search is successful then changes the values of the
+    '                 Global Variables glRow and glCol to match the position
+    '                 of the "found" string.
+    'Arguments:     : sText as String     String being searched for
+    '                 lDir as PsDir       pcSrchForward or pcSrchBackward
+    '                 lRow as Long        Row to start from
+    '                 lCol as Long        Column to start from
+    '
+    'Date             Developer                  Action
+    '------------------------------------------------------------------------
+    '                                            Created
+    '------------------------------------------------------------------------
+    ' Public Function SearchText(ByVal sText As String, Optional ByVal lDir As PsDir = pcSrchForward, Optional ByVal lRow As Long = 1, Optional ByVal lCol As Long = 1) As Boolean
+    ' Public Function SearchText(ByVal sText As String, Optional ByVal lDir As PsDir = pcSrchForward, Optional ByVal lRow As Long = 1, Optional ByVal lCol As Long = 1) As Boolean
+    ' Assuming pcSrchForward = 1
+' Public Function SearchText(ByVal sText As String, Optional ByVal lDir As Long = 1, Optional ByVal lRow As Long = 1, Optional ByVal lCol As Long = 1) As Boolean
+
+        Dim bResult As Boolean
+        Dim Row As Long, Col As Long
+130     Row = lRow
+140     Col = lCol
+'150     bResult = autECLPS.SearchText(sText, lDir, Row, Col)
+160     If bResult Then
+170         glRow = Row
+180         glCol = Col
+190     End If
+'200     SearchText = bResult
+    End Function
+
+'------------------------------------------------------------------------
+    'Comments:      : Added so wait could be called when required
+    'Assumptions:   : Wait
+    'Arguments:     : None
+    '
+    'Date             Developer                 Action
+    '------------------------------------------------------------------------
+    '13/05/11      Leanne Dalgleish               Created
+    '------------------------------------------------------------------------
+    
+    Public Sub Wait300()
+    
+'10     autECLPS.Wait (300)
+    
+        'Waits until the Operator Information Area of the Session window
+        'indicates that the application is no longer being worked with
+'20      autECLOIA.WaitForAppAvailable (glTimeOutLimit)
+        'Waits until the Operator Information Area of the Session window
+        'indicates that the connection is able to accept keyboard input
+'30      autECLOIA.WaitForInputReady (glTimeOutLimit)
+    
+40      Exit Sub
+    End Sub
+

@@ -1,0 +1,681 @@
+Attribute VB_Name = "ModFunctions"
+    Public Function GetRACFID() As String
+    '*************************************************************************************
+    'Function:      GetRACFID
+    'Purpose:       To retrieve the RACF ID of the person using the macro
+    'Author:        Luke Mooney
+    'Date:          28 July 2008
+    '*************************************************************************************
+    'Date:          Amendment:
+    '
+    '*************************************************************************************
+
+12          If Trim(Environ("username")) <> "" Then
+13              GetRACFID = UCase(Environ("username"))
+14          Else
+15              GetRACFID = "UNKNOWN"
+        End If
+        
+    End Function
+
+    '------------------------------------------------------------------------
+    'Comments:      : This function reads in RACFID and returns the User's
+    '                 Display Name (ie their actual name)
+    'Assumptions:   : Connection to AEGONUK network
+    'Arguments:     : sRACFID       As String
+    'Returns:       : Display Name  As String
+    '
+    'References Required:     : None
+    '
+    'Further Info:  : For more info and further examples of how the LDAP
+    '                   connection can be used, please see:
+    '   \\sehcst200nt4\globalapps2\Macros\Individual Service Development\
+    '   Macro Development Team\Personal Folders\Luke\Send Mail from Word.xls
+    '
+    'Date             Developer                 Action
+    '------------------------------------------------------------------------
+    '18/06/2008       Luke Mooney               Created
+    '21/04/2009       Luke Mooney               Amended: Removed Reference to
+    '                                               Active DS Type Library
+    '16/02/2010       Paul Humphreys            Amended: Added error handling to
+    '                                           deal with the object variables
+    '------------------------------------------------------------------------
+    Public Function GetName(ByVal sRACFID As String) As String
+
+44     On Error GoTo ErrorHandler
+45     Application.EnableCancelKey = xlErrorHandler
+
+    Dim objConnection   As Object
+    Dim objCommand      As Object
+    Dim objRecordset    As Object
+    Dim lCount          As Long
+    Dim sReturnArray()             As String
+    Dim sDisplayName    As String
+    Dim iCommaLoc       As Integer
+
+55         Set objConnection = CreateObject("ADODB.Connection")
+56         objConnection.Open "Provider=ADsDSOObject;"
+57         Set objCommand = CreateObject("ADODB.Command")
+58         objCommand.ActiveConnection = objConnection
+
+        'populate an array with the return values where sAMAccountName = sRACFID
+61         lCount = -1
+        ReDim sReturnArray(0 To 0)
+
+64         objCommand.CommandText = _
+            "<LDAP://OU=Users,OU=Aegon UK,DC=aegonuk,DC=com>;" & _
+            "(&(objectCategory=person)(objectClass=user)(sAMAccountName=" _
+            & sRACFID & "));displayName, sAMAccountName;subtree"
+68         Set objRecordset = objCommand.Execute
+69         If objRecordset.EOF And objRecordset.bof Then
+70             Debug.Print "Empty recordset"
+71             sReturnArray(0) = "Username Not found"
+72         Else
+73             While Not objRecordset.EOF
+74                 lCount = lCount + 1
+                ReDim Preserve sReturnArray(0 To lCount)
+76                 If IsNull(objRecordset.Fields("displayName")) Then
+77                     sReturnArray(lCount) = "Username Not found"
+78                 Else
+79                     sReturnArray(lCount) = objRecordset.Fields("displayName")
+                End If
+
+82                 objRecordset.MoveNext
+83             Wend
+        End If
+
+        'Close the connection
+87         objConnection.Close
+
+        'release object variables
+90         Set objRecordset = Nothing
+91         Set objCommand = Nothing
+92         Set objConnection = Nothing
+
+        'NB there should never be more than one record returned for RACFID
+        '   because it is unique.
+        '   No need to write code to catch this. The worst that
+        '   could happen is that the first return value is used
+98         sDisplayName = sReturnArray(LBound(sReturnArray))
+
+        'If a comma exists in the Display Name, the format will be:
+        '                           Surname, Firstname [Initial(s)]
+        'Strip out the comma (to protect against errors when exporting
+        'to CSV) & re-order to:     Firstname [Initial(s)] Surname
+104       iCommaLoc = InStr(sDisplayName, ",")
+105       If iCommaLoc > 0 Then
+106           sDisplayName = Trim(Mid(sDisplayName, iCommaLoc + 1)) & " " _
+                         & Left(sDisplayName, iCommaLoc - 1)
+        End If
+
+        'Return Value
+111       GetName = sDisplayName
+
+        Exit Function
+
+    'Error Handler stores details of Error Raised
+    'for use by the main Error Handler Routine,
+    'then calls the main error handler
+ErrorHandler:
+
+        'Record the error details
+121       gErr.Number = Err.Number
+122       gErr.Description = Err.Description
+123       gErr.Source = Err.Source
+
+        'Clear error handling
+126       On Error Resume Next
+
+        'Set obect variables to nothing
+129       Set objRecordset = Nothing
+130       Set objCommand = Nothing
+131       Set objConnection = Nothing
+
+        'Set the error handling to the originating routine
+134       On Error GoTo 0
+
+        'Re-raise the original error
+137       Err.Raise gErr.Number, gErr.Source, gErr.Description
+
+    End Function
+
+
+Public Function Tiered(Tiered_Conts As String, Atos_Member As String, _
+Age As Long, Below_UEL As Double, Above_UEL As Double, Salary As Double, _
+Contribution_Rate As Double)
+
+  '------------------------------------------------------------------------
+    Rem  Created         : 16/02/11
+    Rem  Author          : Leanne Dalgleish
+    Rem  Description     : Function is to calculate the contribution amount
+    'depending if tiered or not. Atos scheme has tiers and uses UEL salary.
+    'Tables on Tiered Contributions sheet
+    'No Error code called here as function is used 3120 times
+    Rem  Further Info    :
+    Rem  Date             Developer     Action/Comments
+    '------------------------------------------------------------------------
+    '    dd/mm/yyyy       Name          X
+    '    dd/mm/yyyy       Name          X
+    '------------------------------------------------------------------------
+
+    Rem Error handler
+On Error GoTo ErrorHandler
+
+Dim rgRange As Range
+
+10 If Tiered_Conts = "Atos" Then
+Rem table of cont %'s depends on if member is executive or non-executive
+20 If Atos_Member = "Exec" Then
+30 Set rgRange = Range("Atos_Exec")
+Tiered = Application.VLookup(Age, rgRange, 2, False) * Below_UEL / 12 _
++ Application.VLookup(Age, rgRange, 3, False) * Above_UEL / 12
+40 Else
+50 Set rgRange = Range("Atos_NonExec")
+Tiered = Application.VLookup(Age, rgRange, 2, False) * Below_UEL / 12 _
++ Application.VLookup(Age, rgRange, 3, False) * Above_UEL / 12
+60 End If
+70 Else
+80 If Tiered_Conts = "Yes" Then
+90 Set rgRange = Range("Tiered_Conts_Table")
+Tiered = Application.VLookup(Age, rgRange, 2, False) * Salary / 12
+100 Else
+'normal calc
+Tiered = (Salary / 12) * Contribution_Rate
+110 End If
+120 End If
+130 Set rgRange = Nothing
+    Rem stops procedure
+140 Exit Function
+    Rem Calls the error handler
+ErrorHandler:
+Application.ScreenUpdating = True
+Set rgRange = Nothing
+End Function
+
+        '*************************************************************************************
+        'Procedure/Function Name:
+        'Purpose:
+        'Author:      Leanne Dalgleish
+        'Date:          Unknown
+        '*************************************************************************************
+        'Date:          Amendment:          Developer:
+        '
+        '
+        '
+        '*************************************************************************************
+    
+    Public Function Convert6NumericDate(ByVal sDate As String, _
+                        Optional ByVal bCanBeInFuture As Boolean = False) As Long
+    '------------------------------------------------------------------------
+    'Comments       : Public Function - Converts a 6 character Numeric
+    '                 String (in the format "DDMMYY") into a Date Value -
+    '                 and returns this value as a Long
+    'Arguments      : sDate                   Date in required String Format
+    '                 bCanBeInFuture          (optional) Boolean only needs
+    '                                         to be included if possible for
+    '                                         Date to be in future - eg SRD
+    '
+    'Date             Developer                  Action
+    '------------------------------------------------------------------------
+    '03/04/2008       Pedrog Ichikawa-Bryant     Created
+    '------------------------------------------------------------------------
+    
+        'declare variables:
+        'string to hold Date in String format
+        'long to hold final return value - all dates
+        'should be stored internally as Long Values...
+        Dim sTemp As String
+        Dim lReturnVal As Long
+    
+        'sTemp stores Date field
+        'insert d/m/y separators...
+10      sTemp = Left(sDate, 2) & "/" & Mid(sDate, 3, 2) & "/" & Right(sDate, 2)
+        'if value stored in sTemp is recognized as a date, convert to a Long value
+        '- otherwise return the value 0...
+20      If IsDate(sTemp) Then
+    '        'Ensure Date NOT after Today's Date - unless that's OK...
+    '        If CDate(sTemp) < Now Or bCanBeInFuture Then
+    '            'All Ok
+    '        Else
+    '            sTemp = Format(DateSerial(Year(CDate(sTemp)) - 100, _
+    '                Month(CDate(sTemp)), Day(CDate(sTemp))), "DD/MM/YYYY")
+    '        End If
+30          If bCanBeInFuture Then
+40              If CDate(sTemp) < DateSerial(Year(Now) - 25, Month(Now), Day(Now)) Then
+50                  sTemp = Format(DateSerial(Year(CDate(sTemp)) + 100, _
+                        Month(CDate(sTemp)), Day(CDate(sTemp))), "DD/MM/YYYY")
+60              Else
+                    'all OK - leave as is
+70              End If
+80          Else
+90              If CDate(sTemp) > DateSerial(Year(Now) + 25, Month(Now), Day(Now)) Then
+100                 sTemp = Format(DateSerial(Year(CDate(sTemp)) - 100, _
+                        Month(CDate(sTemp)), Day(CDate(sTemp))), "DD/MM/YYYY")
+110             Else
+                    'all OK - leave as is
+120             End If
+130         End If
+            'Convert to a Long
+140         lReturnVal = CLng(CDate(sTemp))
+150     Else
+            'Return 0
+160         lReturnVal = 0
+170     End If
+    
+        'Return Value
+180     Convert6NumericDate = lReturnVal
+    
+    End Function
+    
+    
+    
+        '*************************************************************************************
+        'Function:
+        'Purpose:
+        'Author:      Leanne Dalgleish
+        'Date:          Unknown
+        '*************************************************************************************
+        'Date:          Amendment:          Developer:
+        '
+        '
+        '
+        '*************************************************************************************
+    
+    Public Function Convert8CharacterDateString(ByVal sDate As String, _
+                                        Optional ByVal bCanBeInFuture As Boolean = False) As Long
+    '------------------------------------------------------------------------
+    'Comments       : Public Function - Converts a 8 character Date String
+    '                 (in the format "DD/MM/YY" into a Date Value -
+    '                 and returns this value as a Long
+    'Arguments      : sDate                   Date in required String Format
+    '
+    'Date             Developer                  Action
+    '------------------------------------------------------------------------
+    '09/04/2008       Paul Humphreys             Generated
+    '------------------------------------------------------------------------
+    
+        'declare variables:
+        'string to hold Date in String format
+        'long to hold final return value - all dates
+        'should be stored internally as Long Values...
+        Dim sTemp As String
+        Dim lReturnVal As Long
+    
+        'sTemp stores Date field
+10      sTemp = sDate
+        'if value stored in sTemp is recognized as a date, convert to a Long value
+        '- otherwise return the value 0...
+20      If IsDate(sTemp) Then
+            'Ensure Date NOT after Today's Date - unless that's OK...
+30          If bCanBeInFuture Then
+40              If CDate(sTemp) < DateSerial(Year(Now) - 25, Month(Now), Day(Now)) Then
+50                  sTemp = Format(DateSerial(Year(CDate(sTemp)) + 100, _
+                        Month(CDate(sTemp)), Day(CDate(sTemp))), "DD/MM/YYYY")
+60              Else
+                    'all OK - leave as is
+70              End If
+80          Else
+90              If CDate(sTemp) > DateSerial(Year(Now) + 25, Month(Now), Day(Now)) Then
+100                 sTemp = Format(DateSerial(Year(CDate(sTemp)) - 100, _
+                        Month(CDate(sTemp)), Day(CDate(sTemp))), "DD/MM/YYYY")
+110             Else
+                    'all OK - leave as is
+120             End If
+130         End If
+            'Convert to a Long
+140         lReturnVal = CLng(CDate(sTemp))
+150     Else
+            'Return 0
+160         lReturnVal = 0
+170     End If
+        'Return Value
+180     Convert8CharacterDateString = lReturnVal
+    
+    End Function
+    
+    
+    
+        '*************************************************************************************
+        'Function:
+        'Purpose:
+        'Author:      Leanne Dalgleish
+        'Date:          Unknown
+        '*************************************************************************************
+        'Date:          Amendment:          Developer:
+        '
+        '
+        '
+        '*************************************************************************************
+    
+    Public Function Convert8NumericDate(ByVal sDate As String, _
+                        Optional ByVal bCanBeInFuture As Boolean = False) As Long
+    '------------------------------------------------------------------------
+    'Comments       : Public Function - Converts a 8 character Numeric
+    '                 String (in the format "DDMMYYYY") into a Date Value -
+    '                 and returns this value as a Long
+    'Arguments      : sDate                   Date in required String Format
+    '                 bCanBeInFuture          (optional) Boolean only needs
+    '                                         to be included if possible for
+    '                                         Date to be in future - eg SRD
+    '
+    'Date             Developer                  Action
+    '------------------------------------------------------------------------
+    '03/04/2008       Paul Humphreys             Created
+    '------------------------------------------------------------------------
+    
+        'declare variables:
+        'string to hold Date in String format
+        'long to hold final return value - all dates
+        'should be stored internally as Long Values...
+        Dim sTemp As String
+        Dim lReturnVal As Long
+    
+        'sTemp stores Date field
+        'insert d/m/y separators...
+10      sTemp = Left(sDate, 2) & "/" & Mid(sDate, 3, 2) & "/" & Right(sDate, 4)
+            'if value stored in sTemp is recognized as a date, convert to a Long value
+        '- otherwise return the value 0...
+20      If IsDate(sTemp) Then
+            'Convert to a Long
+30          lReturnVal = CLng(CDate(sTemp))
+40      Else
+            'Return 0
+50          lReturnVal = 0
+60      End If
+    
+        'Return Value
+70      Convert8NumericDate = lReturnVal
+    
+    End Function
+    
+    
+    
+        '*************************************************************************************
+        'Function:
+        'Purpose:
+        'Author:      Leanne Dalgleish
+        'Date:          Unknown
+        '*************************************************************************************
+        'Date:          Amendment:          Developer:
+        '
+        '
+        '
+        '*************************************************************************************
+    
+    Public Function Convert10CharacterDateString(ByVal sDate As String) As Long
+    '------------------------------------------------------------------------
+    'Comments       : Public Function - Converts a 10 character Date String
+    '                 (in the format "DD/MM/YYYY" into a Date Value -
+    '                 and returns this value as a Long
+    'Arguments      : sDate                   Date in required String Format
+    '
+    'Date             Developer                  Action
+    '------------------------------------------------------------------------
+    '09/04/2008       Paul Humphreys             Generated
+    '------------------------------------------------------------------------
+    
+        'declare variables:
+        'string to hold Date in String format
+        'long to hold final return value - all dates
+        'should be stored internally as Long Values...
+        Dim sTemp As String
+        Dim lReturnVal As Long
+    
+        'sTemp stores Date field
+10      sTemp = sDate
+        'if value stored in sTemp is recognized as a date, convert to a Long value
+        '- otherwise return the value 0...
+20      If IsDate(sTemp) Then
+            'Convert to a Long
+30          lReturnVal = CLng(CDate(sTemp))
+40      Else
+            'Return 0
+50          lReturnVal = 0
+60      End If
+        'Return Value
+70      Convert10CharacterDateString = lReturnVal
+    
+    End Function
+    
+    
+        '*************************************************************************************
+        'Function:
+        'Purpose:
+        'Author:      Leanne Dalgleish
+        'Date:          Unknown
+        '*************************************************************************************
+        'Date:          Amendment:          Developer:
+        '
+        '
+        '
+        '*************************************************************************************
+    
+    Public Function CleanStringWithFloorNumbers(sText As String) As String
+    '------------------------------------------------------------------------
+    'Comments       : Public Function - Removes Capital letters where floor
+    '                 numbers are in the format of "NCC" where
+    '                 N = Numeric character
+    '                 C = Alphabetic character
+    'Arguments      : sText                   String needing to be adjusted
+    '
+    'Date             Developer                  Action
+    '------------------------------------------------------------------------
+    '03/04/2008       Pedrog Ichikawa-Bryant     Created
+    '------------------------------------------------------------------------
+    
+        Dim sReturn As String
+        Dim bteCount As Byte
+10      sReturn = Replace(sText, "1St", "1st")
+20      sReturn = Replace(sReturn, "2Nd", "2nd")
+30      sReturn = Replace(sReturn, "3Rd", "3rd")
+40      For bteCount = 0 And bteCount = 4 To 9
+50          sReturn = Replace(sReturn, bteCount & "Th", bteCount & "th")
+60      Next bteCount
+70      CleanStringWithFloorNumbers = sReturn
+    End Function
+    
+    
+        '*************************************************************************************
+        'Function:
+        'Purpose:
+        'Author:      Leanne Dalgleish
+        'Date:          Unknown
+        '*************************************************************************************
+        'Date:          Amendment:          Developer:
+        '
+        '
+        '
+        '*************************************************************************************
+    
+    Public Function IsMacroDeveloper(ByVal sUserName As String) As Boolean
+    '*************************************************************************************
+    'Function:      IsMemberOfMDT
+    'Purpose:       To check if the user is a member of the Macro Development Team
+    'Arguments:     sUserName               The user's RACF ID
+    'Author:        Luke Mooney
+    'Date:          28 July 2008
+    '*************************************************************************************
+    'Date:          Amendment:
+    '
+    '*************************************************************************************
+    
+10      Select Case VBA.UCase(sUserName)
+                      'Saurav      Rakesh     Satya    Souvik
+            Case Is = "ISAPSDA", "ISAPEZ1", "ISAPVW8", "SKOLE"
+                IsMacroDeveloper = True
+            Case Else
+                IsMacroDeveloper = False
+        End Select
+        
+        
+        'RS 18.08.2016 - for testing purpose
+'        IsMacroDeveloper = True
+    
+    End Function
+    
+    
+        '*************************************************************************************
+        'Function:      testGetName()
+        'Purpose:
+        'Author:      Leanne Dalgleish
+        'Date:          Unknown
+        '*************************************************************************************
+        'Date:          Amendment:          Developer:
+        '
+        '
+        '
+        '*************************************************************************************
+    
+    Private Sub testGetName()
+10      Debug.Print GetName("RCRCSQ3")
+    End Sub
+
+
+'------------------------------------------------------------------------
+    Rem  Created         : 01/03/2012
+    Rem  Author          : Pradip samanta
+    Rem  Description     : Calculate the Average Premium
+    '
+    '
+    Rem  Further Info    :
+    Rem  Date             Developer     Action/Comments
+    '------------------------------------------------------------------------
+    '    dd/mm/yyyy       Name          X
+    '    dd/mm/yyyy       Name          X
+    '------------------------------------------------------------------------
+
+    
+Sub Cal_Avg_Prem()
+
+Rem Error handler
+8 On Error GoTo ErrorHandler
+9 Call modGlobals.Create_Globals
+10 If wksProjInput.Range("C118") = 0 Or wksProjInput.Range("C118") = "" Or wksProjInput.Range("Calc.date").Value = 0 Or wksProjInput.Range("S3").Value = 0 Then
+11 MsgBox "One or more of the details required for this calculation are missing or zero."
+12 Exit Sub
+13 Else: End If
+14 Dim pLimit As Integer
+20 Dim X As Integer
+21 Dim ASD As String
+22 Dim LSRD As String
+23 Dim Dp1 As Integer
+24 Dim Dp2 As Integer
+25 Dim Mp1 As Integer
+26 Dim Mp2 As Integer
+27 Dim Yp1 As Integer
+28 Dim Yp2 As Integer
+30 Dim Y As Integer
+40 Dim FreqAdj As Integer
+50 Dim AWE As Double
+51 Dim n As Integer
+52 AWE = 0.025
+53 PRec = 0
+54 Dim FP As String
+55 Dim DP As Integer
+56 Dim x1 As Integer
+57 Dim x2 As Integer
+'60 Set wkbkFutPro = ActiveWorkbook
+'70 Set wksProjInput = wkbkFutPro.Worksheets("Proj-input")
+80 ASD = wksProjInput.Range("Calc.date").Value 'Assign Increment Start Date
+90 LSRD = wksProjInput.Range("S3").Value       'Assign Last Renewal date
+100 Dp1 = DatePart("d", ASD) 'Assign date part of Increment Start Date
+110 Dp2 = DatePart("d", LSRD) 'Assign date part of Last Renewal date
+120 Mp1 = DatePart("m", ASD) 'Assign month part of Increment Start Date
+130 Mp2 = DatePart("m", LSRD) 'Assign month part of Last Renewal date
+140 Yp1 = DatePart("yyyy", ASD) 'Assign year part of Increment Start Date
+150 Yp2 = DatePart("yyyy", LSRD) 'Assign year part of Last Renewal date
+160 FP = wksProjInput.Range("NewFreqPremium").Value 'Assign frequency of premium
+170 DP = Dp1 - Dp2
+180 m = 0
+190 freq = wksProjInput.Range("NewFreqPremium").Value
+'200 If freq = "Weekly" Then
+'210    FreqAdj = 52
+'220   If freq = "Fortnightly" Then
+'230      FreqAdj = 26
+'231      If freq = "Monthly" Then
+'            FreqAdj = 12
+'         End If
+'240   End If
+'250 Else
+'260    FreqAdj = 12
+'270 End If
+
+freq = Trim(LCase(freq))
+200 Select Case freq
+
+ Case Is = "weekly"
+220    FreqAdj = 52
+221    pLimit = 52
+230 Case Is = "fortnightly"
+240    FreqAdj = 26
+241    pLimit = 26
+250 Case Is = "monthly"
+260    FreqAdj = 12
+261    pLimit = 12
+270 Case Is = "quarterly"
+271    FreqAdj = 4
+272    pLimit = 4
+'253 Case Else
+'254    FreqAdj = 12
+'255    pLimit = 12
+273 End Select
+
+280 If DP < 0 Then
+290    X = 1
+300 Else
+310    X = 0
+320 End If
+
+330 MthsElpsd = WorksheetFunction.Min(12, ((Yp1 - Yp2) * 12) + (Mp1 - Mp2) - X) 'Calculation of Months Elapsed
+331 n = 0
+340 Y = Int((m + MthsElpsd) / 12)
+350 EscFactor = (1 + AWE) ^ Y 'Calculation of Escalation Factor
+
+351 pLimit = pLimit + 118
+352 For i = 118 To pLimit - 1
+353     If CDbl(wksProjInput.Range("C" & i).Value) > 0 Then
+354         n = n + 1
+        PRec = PRec + CDbl(wksProjInput.Range("C" & i).Value)
+
+355  End If
+356 Next
+
+357 AP = ((1 / n) * PRec) * (FreqAdj / 12) * EscFactor 'Final Average Premium
+'MsgBox "Average Premium=" & AP
+358 wksProjInput.Range("R13") = AP
+359 wksProjInput.Range("G8") = AP
+360 wksProjInput.Range("C20") = AP
+361 Exit Sub
+
+370 ErrorHandler:
+380 Application.ScreenUpdating = True
+390 gErr.Number = Err.Number
+400 gErr.Description = Err.Description
+410 gErr.Source = Err.Source
+420 gErr.Erl = Erl
+430 Call modError.Handler
+
+450 End Sub
+
+'----------------------------------------------------------------------------------------
+'Procedure:     : AddWaitTime()
+'Comments:      : To apply a wait time for each execution
+'Arguments:     : None.
+'Date             Developer                     Action
+'-----------------------------------------------------------------------------------------
+'02/06/2015       Satyanand Tripathi           Created
+'-----------------------------------------------------------------------------------------
+Sub AddWaitTime()
+
+    Dim dStart As Double
+    
+    dStart = Timer
+    
+    Do While Timer < dStart + gdWaitTime
+        'wait for "gdWaitTime" seconds
+    Loop
+
+End Sub
+
+
+

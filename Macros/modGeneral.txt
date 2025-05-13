@@ -1,0 +1,184 @@
+Attribute VB_Name = "modGeneral"
+
+Option Explicit
+
+'------------------------------------------------------------------------
+'Procedure      : SetStatus
+'Date           : 20 October 2006
+'Author         : Pedrog Ichikawa-Bryant
+'Description    : Generic Control Procedure - to ensure SE Mainframe
+'                 Session is in progress and available and set to the
+'                 Slash Transactions set of screens.
+'------------------------------------------------------------------------
+    Sub setStatus(Optional ByVal sName As String = "A", _
+                  Optional ByVal bFirstTime As Boolean = False)
+    
+        Dim frmEnv As frmMfSelectEnv  'Form to allow user to select environment
+        Dim sEnvironment As String    'String to identify environment
+        Dim lPage As Long             'Page number (if more than one page on Aegon Menu)
+        Dim vaMFEnvironmentList As Variant        'to contain String array
+                                                  'to be used as argument in frmEnv Refresh
+        Dim sProcName As String
+        
+        Dim lCount As Long
+        
+        sProcName = "modMainframeSession.setStatus"
+    
+        On Error GoTo ErrorHandler
+        Application.EnableCancelKey = xlErrorHandler
+    
+10      seMfrConnected = seMfr.bMfConnect(sName)
+    
+        'check whether connection to MF was set correctly:
+20      If Not seMfrConnected Then
+            Err.Raise 50004, "modMainframeSession.setStatus", "Unable to connect to Mainframe Session"
+        End If
+    
+        'check if Session is on the main Logon Screen
+30      If seMfr.bCheckLogon Then
+            If bFirstTime Then
+                Err.Raise 50005, "modMainframeSession.setStatus", "User Not Logged On to Mainframe Session"
+            Else
+35              If MsgBox("You are not currently logged on to Session " & sName & " - please" & vbNewLine & _
+                    "log in before continuing with the macro." & vbNewLine & vbNewLine & _
+                    "Click [Retry] to try again." & vbNewLine & _
+                    "Click [Cancel] to exit the macro.", vbRetryCancel, gsAPP_NAME) _
+                    = vbRetry Then
+                    'go back to line 10 - redo ALL checks
+                    GoTo 10
+                Else
+                    On Error GoTo ErrorHandler
+                    Err.Raise 50005, "modMainframeSession.setStatus", "User Not Logged On to Mainframe Session"
+                End If
+            End If
+        End If
+    
+        'check if Session is displaying the "Change Password" dialogue:
+40      If seMfr.bCheckPass Then
+            If bFirstTime Then
+                Err.Raise 50006, "modMainframeSession.setStatus", "User must Change Password for Mainframe Session"
+            Else
+45              If MsgBox("Session " & sName & " is requesting a change of Password - please" & vbNewLine & _
+                    "update your password before continuing with the macro." & vbNewLine & vbNewLine & _
+                    "Click [Retry] to try again." & vbNewLine & _
+                    "Click [Cancel] to exit the macro.", vbRetryCancel, gsAPP_NAME) _
+                    = vbRetry Then
+                    GoTo 10
+                Else
+                    On Error GoTo 0
+                    Err.Raise 50006, "modMainframeSession.setStatus", "User must Change Password for Mainframe Session"
+                End If
+            End If
+        End If
+    
+        'check if session is locked
+50      If seMfr.bCheckLock Then
+            If bFirstTime Then
+                Err.Raise 50007, "modMainframeSession.setStatus", "User has been locked out of Mainframe Session"
+            Else
+55              If MsgBox("Session " & sName & " has been locked out - please" & vbNewLine & _
+                    "unlock the Session before continuing with the macro." & vbNewLine & vbNewLine & _
+                    "Click [Retry] to try again." & vbNewLine & _
+                    "Click [Cancel] to exit the macro.", vbRetryCancel, gsAPP_NAME) _
+                    = vbRetry Then
+                    GoTo 10
+                Else
+                    On Error GoTo 0
+                    Err.Raise 50007, "modMainframeSession.setStatus", "User has been locked out of Mainframe Session"
+                End If
+            End If
+        End If
+        
+        Call ModFunctions.AddWaitTime 'RS 22.08.2016
+    
+        'if Session is on Broadcast screen, then skip over it
+60      If seMfr.bCheckBroadcast Then seMfr.EnterNext
+    
+        'if Session is on AEGON Menu, then stay there for now...
+70      If seMfr.bCheckMenu Then
+            'OK to stay on AEGON Menu
+        Else
+            seMfr.navAegonMenu
+        End If
+        
+        Call ModFunctions.AddWaitTime 'RS 22.08.2016
+    
+        'if user is a Macro Developer - then allow them to select their environment:
+80      If ModFunctions.IsMacroDeveloper(UCase(Environ("UserName"))) Then
+            'display list of available environments for developer to select from
+            Set frmEnv = New frmMfSelectEnv
+            'Load and Show frmEnv
+90          Load frmEnv
+    
+            Call ModFunctions.AddWaitTime   'Satya
+'            MsgBox "Select environment"
+            'create a list of environments
+100         vaMFEnvironmentList = seMfr.GetMfApplications
+            
+            'refresh frmEnv with the updated list:
+110         For lCount = LBound(vaMFEnvironmentList) To UBound(vaMFEnvironmentList)
+                frmEnv.AddApplication vaMFEnvironmentList(lCount)
+            Next lCount
+            
+120         If seMfr.bIsITEnvironment Then
+                frmEnv.ItemsOnPage = 12
+125         Else
+                frmEnv.ItemsOnPage = 10
+            End If
+    
+130         frmEnv.Show
+    
+            'If user chose to quit then unload frmEnv, destroy the object variable
+            'and raise a User Quit Error
+140         If frmEnv.CloseMethod = frmCloseMethodQuit Or _
+                frmEnv.CloseMethod = frmclosemethodcancel Then
+                Unload frmEnv
+                Set frmEnv = Nothing
+
+                On Error GoTo 0
+                Err.Raise 50018, "frmBegin", "User Selected Quit"
+            'Otherwise store details given by user in Global Variables
+145         Else
+                sEnvironment = frmEnv.EnvironmentString
+'147             gsSelectedMfEnv = sEnvironment
+                lPage = frmEnv.PageNumber
+                Unload frmEnv
+                Set frmEnv = Nothing
+            End If
+            
+            seMfr.AegonMenuToEnvironment sEnvironment, lPage
+150     Else
+
+            Call ModFunctions.AddWaitTime 'RS 22.08.2016
+                    
+            seMfr.AegonMenuToSlash
+'155         gsSelectedMfEnv = "PROD"
+        End If
+160     Exit Sub
+    
+ErrorHandler:
+    
+162        gErr.Number = Err.Number
+163        gErr.Source = Err.Source
+164        gErr.Description = Err.Description
+165        If ModFunctions.IsMacroDeveloper(Environ("UserName")) Then
+166            Stop
+            'can resume if you like:
+168            Resume 'commented on 18/04/2013
+170        End If
+171        On Error Resume Next
+        'Resume '05/04
+172        If frmEnv Is Nothing Then
+            'no action required
+173        Else
+174            Unload frmEnv
+175            Set frmEnv = Nothing
+176        End If
+    
+177        Set vaMFEnvironmentList = Nothing
+    
+178        Err.Raise gErr.Number, gErr.Source, gErr.Description
+    
+    End Sub
+
+

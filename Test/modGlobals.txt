@@ -1,0 +1,342 @@
+Attribute VB_Name = "modGlobals"
+Option Explicit
+
+Public Enum frmCloseMethod
+    frmCloseMethodOK
+    frmCloseMethodQuit
+    frmCloseMethodAdmin
+    frmCloseMethodError
+    frmclosemethodcancel
+    frmCloseMethodOverGAD
+    frmCloseMethodOver75
+    frmCloseMethod5YrReview
+End Enum
+
+
+Public gsRACFID As String
+Public gsUserName As String
+Public seMfr As Session
+Public seMfrConnected As Boolean
+
+Public glRow As Long
+Public glCol As Long
+Public gsPolicyRef As String
+
+Public gsDummyPath As String
+    
+Rem setting workbook sheets as global variables
+Public wkbkFutPro As Workbook
+Public wksProjInput As Worksheet
+Public wksD2D As Worksheet
+Public wksAllocRates As Worksheet
+Public wksProjCalc As Worksheet
+Public wksBackCalc As Worksheet
+Public wksPRDSA As Worksheet
+Public wksBulk As Worksheet
+Public wksTiered As Worksheet
+Public wksCollect As Worksheet
+Public wksPostSRA As Worksheet  'ST 05.08.2016 - Added under P3576b-WPI
+Rem annrates
+Public wkbkAnnRates As Workbook
+Public wksInputs As Worksheet
+Public wksPara As Worksheet
+Public wksFinalCalcs As Worksheet
+Public wksResults As Worksheet
+Rem SMPI Single
+Public wkbkSMPISing As Workbook
+Public wksSMPIInSing As Worksheet
+Public wksSMPIOutSing As Worksheet
+Rem SMPI Joint
+Public wkbkSMPIJoint As Workbook
+Public wksSMPIInJoint As Worksheet
+Public wksSMPIOutJoint As Worksheet
+
+'Define Growth Rate calculator variable name
+Public wkbGrowthRateCalculator As Workbook 'ST 05.08.2016 - Added under P3576b-WPI
+Public wksWelcome As Worksheet             'ST 05.08.2016 - Added under P3576b-WPI
+
+Public Const strAPP_NAME As String = "FutProD2D"
+Public Const gsAPP_NO As String = "M0042"
+Public Const gdGrowthRateCap As Double = 0.03 'ST 05.08.2016 - Added under P3576b-WPI
+
+Public strProcName As String
+Public gsProcName As String
+Public gErr As gError
+
+Public gwbk As Excel.Workbook
+Public gwks As Excel.Worksheet
+
+'Boolean which defines whether the spreadsheet is in development or not
+'Can be used to disable Protection or hiding Sheets
+'eg modFunctions.SwitchSheets or modFunctions.ProtectSheet
+Public gblnDevelopmentMode As Boolean
+
+'When true, testing log will be written to gsSCREEN_DUMPS_FOLDER
+'When false, no screen dumps will be written out
+Public Const gbIS_TESTING As Boolean = False
+
+Public Type gError
+    Description As String
+    Number As Long
+    Source As String
+    Erl As Long
+End Type
+
+'Used to reference the folder used to house screen dumps:
+'NB: The "* 93" restricts the memory made available for this string to 93 characters
+'If your string is different, you need to change this number accordingly
+Public Const gsSCREEN_DUMPS_FOLDER As String * 93 = "\\sehcst200nt4\globalapps2\Macros\Individual Service Development\" & _
+    "Macro Development Team\Testing\" & gsAPP_NO & "\"
+    
+'Enter your specific project number here and this can be used to
+'reference the project number
+''Public Const gsAPP_NO As String = "M0147"
+
+'Enter your specific project name here
+'Used in MsgBox & InputBox "Title" parameter. Also used to create user access record
+'Public Const gsAPP_NAME As String = "FutproD2D"
+Public Const gsAPP_NAME As String = "FutproD2D-Heritage" 'ST 05.08.2016 - Added under P3576b-WPI
+
+
+'Used to reference the User Access Log to record access
+'Public Const gsACCESS_LOG As String = "\\aegonuk.com\offshore\ITCH Macro Team\" & _
+'    "Log\" & gsAPP_NO & " - User Access.log"
+
+''Public Const gsACCESS_LOG As String = "\\sehcst200nt4\globalapps2\Macros\Individual Service Development\Macro Development Team\" & _
+''    "Log\" & gsAPP_NO & " - User Access.log"
+
+'Used to reference the User Access Log to record access
+
+
+
+'---The log files path has been updated under Fileshare Migration project---
+Public Const gsACCESS_LOG As String = "\\sehcst200nt4\globalapps2\Macros\Individual Service Development\Macro Development Team\" & _
+    "Log\" & gsAPP_NO & " - User Access.log"
+     
+Public Const gsERROR_LOG As String = "\\sehcst200nt4\globalapps2\Macros\Individual Service Development\Macro Development Team\" & _
+    "Log\" & gsAPP_NO & " - Error.log"
+     
+'This is used to determine if the acces/error logs should be created/updated as they do not work when the spreadsheet is offshore.
+'It is also used to determine where the annuity rate spreadsheets are opened from.
+Public gsOffshoreUser As String
+'= ThisWorkbook.Sheets("Collect via macro").Range("Offshore_User")
+
+Public Const gsAnnuityName As String = "AnnRates1011.xls"
+Public Const gsSMPISingName As String = "SMPI Single.xls"
+Public Const gsSMPIJointName As String = "SMPI Joint.xls"
+Public Const gsGrowthRateCalculator As String = "Transaction Level growth rate calculator.xlsm" 'ST 05.08.2016 - Added under P3576b - WPI
+
+'Satya 02.06.2015 - Time Gap variable
+Public Const gdWaitTime As Double = 1#  'Wait time 1.0 seconds
+Public Const giMaxWaitTime As Integer = 10  'Max Wait time 10.0 seconds 'ST 05.10.2016
+Public Const glTimeOutLimit As Long = 90000  'RS 01.07.2015
+
+'18.11.2016
+Public Const gsTransactionGrowthCalculatorPath As String = "\\sehcst200nt4\globalapps2\Macros\Individual Service Development\MDT Templates\Production\M0292\"
+
+
+
+    Public Sub Create_Globals()
+    Rem Error handler
+    On Error GoTo ErrorHandler
+10  strProcName = "Create_Globals"
+    Rem stops flickering screen and runs faster
+20  Application.ScreenUpdating = False
+    Rem Set up global variables
+30  Set wkbkFutPro = ActiveWorkbook
+40  Set wksProjInput = wkbkFutPro.Worksheets("Proj-input")
+50  Set wksD2D = wkbkFutPro.Worksheets("D2D")
+60  Set wksAllocRates = wkbkFutPro.Worksheets("Allocation Rates")
+70  Set wksProjCalc = wkbkFutPro.Worksheets("Projection Calculation")
+80  Set wksBackCalc = wkbkFutPro.Worksheets("Background Calculations")
+90  Set wksPRDSA = wkbkFutPro.Worksheets("PRDSA Print")
+100 Set wksBulk = wkbkFutPro.Worksheets("Bulk Template")
+110 Set wksTiered = wkbkFutPro.Worksheets("Tiered Contributions")
+111 Set wksCollect = wkbkFutPro.Worksheets("Collect via Macro")
+112 Set wksPostSRA = wkbkFutPro.Worksheets("Post SRA Growth rate")  'ST 05.08.2016 - Added under P3576b-WPI
+
+113 gsOffshoreUser = ThisWorkbook.Sheets("Collect via macro").Range("Offshore_User")
+120 Exit Sub
+    Rem Calls the error handler
+ErrorHandler:
+130 Application.ScreenUpdating = True
+140 gErr.Number = Err.Number
+150 gErr.Description = Err.Description
+160 gErr.Source = Err.Source
+170 gErr.Erl = Erl
+180 Call modError.Handler
+    End Sub
+    
+    Public Sub Delete_Globals()
+    Rem Error handler
+    On Error GoTo ErrorHandler
+10  strProcName = "Delete_Globals"
+    Rem stops flickering screen and runs faster
+20  Application.ScreenUpdating = False
+    Rem Sets global variables to nothing
+30  Set wkbkFutPro = Nothing
+40  Set wksProjInput = Nothing
+50  Set wksD2D = Nothing
+60  Set wksAllocRates = Nothing
+70  Set wksProjCalc = Nothing
+80  Set wksBackCalc = Nothing
+90  Set wksPRDSA = Nothing
+100 Set wksBulk = Nothing
+110 Set wksTiered = Nothing
+111 Set wksCollect = Nothing
+    Rem turn on screenupdating
+120 Application.ScreenUpdating = True
+130 Exit Sub
+    Rem Calls the error handler
+ErrorHandler:
+140 Application.ScreenUpdating = True
+150 gErr.Number = Err.Number
+160 gErr.Description = Err.Description
+170 gErr.Source = Err.Source
+180 gErr.Erl = Erl
+190 Call modError.Handler
+    End Sub
+    
+    Sub Open_Annrates_files()
+    Rem Error handler
+    On Error GoTo ErrorHandler
+10  strProcName = "Create_Globals"
+    Rem stops flickering screen and runs faster
+20  Application.ScreenUpdating = False
+
+30      If Not IsFileOpen(gsAnnuityName) Then
+31 If gsOffshoreUser = "Onshore Use" Then
+40      Application.Workbooks.Open ("\\aegonuk.com\Data\Published Macros\Macros\Common Files\AnnRates1011.xls"), ReadOnly:=True
+41 Else
+42     Application.Workbooks.Open (ThisWorkbook.Path & "\AnnRates1011.xls"), ReadOnly:=True
+43 End If
+50      Else: End If
+
+51      If Not IsFileOpen(gsSMPISingName) Then
+52 If gsOffshoreUser = "Onshore Use" Then
+53      Application.Workbooks.Open ("\\aegonuk.com\Data\Published Macros\Macros\Common Files\SMPI Single.xls"), ReadOnly:=True
+    
+54 Else
+55     Application.Workbooks.Open (ThisWorkbook.Path & "\SMPI Single.xls"), ReadOnly:=True
+56 End If
+57      Else: End If
+
+58      If Not IsFileOpen(gsSMPIJointName) Then
+59 If gsOffshoreUser = "Onshore Use" Then
+60      Application.Workbooks.Open ("\\aegonuk.com\Data\Published Macros\Macros\Common Files\SMPI Joint.xls"), ReadOnly:=True
+    
+61 Else
+62     Application.Workbooks.Open (ThisWorkbook.Path & "\SMPI Joint.xls"), ReadOnly:=True
+63 End If
+64      Else: End If
+
+'30  Workbooks.Open Filename:="\\aegonuk.com\Data\Published Macros\Macros\Common Files\AnnRates1011.xls", ReadOnly:=True
+'40  Workbooks.Open Filename:="\\aegonuk.com\Data\Published Macros\Macros\Common Files\SMPI Single.xls", ReadOnly:=True
+'50  Workbooks.Open Filename:="\\aegonuk.com\Data\Published Macros\Macros\Common Files\SMPI Joint.xls", ReadOnly:=True
+    
+    Rem annrates
+65  Set wkbkAnnRates = Workbooks("AnnRates1011.xls")
+70  Set wksInputs = wkbkAnnRates.Worksheets("Inputs")
+80  Set wksPara = wkbkAnnRates.Worksheets("parameters")
+90  Set wksFinalCalcs = wkbkAnnRates.Worksheets("final calcs")
+100 Set wksResults = wkbkAnnRates.Worksheets("Results")
+    Rem SMPI Single
+    
+110 Set wkbkSMPISing = Workbooks("SMPI Single.xls")
+120 Set wksSMPIInSing = wkbkSMPISing.Worksheets("Input")
+130 Set wksSMPIOutSing = wkbkSMPISing.Worksheets("Output")
+    Rem SMPI Joint
+140 Set wkbkSMPIJoint = Workbooks("SMPI Joint.xls")
+150 Set wksSMPIInJoint = wkbkSMPIJoint.Worksheets("Input")
+160 Set wksSMPIOutJoint = wkbkSMPIJoint.Worksheets("Output")
+    
+170 wkbkAnnRates.Activate
+180 ActiveWindow.Visible = False
+190 wkbkSMPISing.Activate
+200 ActiveWindow.Visible = False
+210 wkbkSMPIJoint.Activate
+220 ActiveWindow.Visible = False
+
+221 ThisWorkbook.Activate
+    
+230 Exit Sub
+    Rem Calls the error handler
+ErrorHandler:
+240 Application.ScreenUpdating = True
+250 gErr.Number = Err.Number
+260 gErr.Description = Err.Description
+270 gErr.Source = Err.Source
+280 gErr.Erl = Erl
+290 Call modError.Handler
+    End Sub
+    
+    Sub Close_Annrates_files()
+    Rem Error handler
+    On Error GoTo ErrorHandler
+10  strProcName = "Create_Globals"
+    Rem stops flickering screen and runs faster
+20  Application.ScreenUpdating = False
+
+21 If wkbkAnnRates Is Nothing Then Exit Sub
+
+    If Range("IsPhasedCalc") <> "Yes" Then
+    
+30  wkbkAnnRates.Close False
+40  wkbkSMPISing.Close False
+50  wkbkSMPIJoint.Close False
+    
+    End If
+    
+    Rem annrates
+60  Set wkbkAnnRates = Nothing
+70  Set wksInputs = Nothing
+80  Set wksPara = Nothing
+90  Set wksFinalCalcs = Nothing
+100 Set wksResults = Nothing
+    Rem SMPI Single
+110 Set wkbkSMPISing = Nothing
+120 Set wksSMPIInSing = Nothing
+130 Set wksSMPIOutSing = Nothing
+    Rem SMPI Joint
+140 Set wkbkSMPIJoint = Nothing
+150 Set wksSMPIInJoint = Nothing
+160 Set wksSMPIOutJoint = Nothing
+170 Exit Sub
+    Rem Calls the error handler
+ErrorHandler:
+180 Application.ScreenUpdating = True
+190 gErr.Number = Err.Number
+200 gErr.Description = Err.Description
+210 gErr.Source = Err.Source
+220 gErr.Erl = Erl
+230 Call modError.Handler
+    End Sub
+
+
+    Public Sub InitializeValues()
+29      gsRACFID = ModFunctions.GetRACFID()
+30      gsUserName = ModFunctions.GetName(gsRACFID)
+31      gsDummyPath = "\\aegonuk.com\Data\Macro Team\Published\Logs\Dummy1.txt"
+    
+32     'gsDummyPath = "\\aegonuk\ukhome1\edc\isaprsa\My VB Macro\SR42896\Log\Dummy.txt"
+    End Sub
+
+'*****************************************************************************
+'Comments       : Checks if annrates is already open
+'
+'Date             Developer                  Action
+'******************************************************************************
+'06/04/11         Leanne Dalgleish                   Generated
+'------------------------------------------------------------------------------
+
+Function IsFileOpen(wbName As String) As Boolean
+
+Dim wb As Workbook
+On Error Resume Next
+Set wb = Workbooks(wbName)
+IsFileOpen = Not (Err.Number > 0)
+Exit Function
+End Function
+
+
+

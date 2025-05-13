@@ -1,0 +1,663 @@
+Attribute VB_Name = "ModRun"
+Option Explicit
+
+Public Sub Run_Calc()
+    
+    '------------------------------------------------------------------------
+    Rem  Created         : 14/02/11
+    Rem  Author          : Leanne Dalgleish
+    Rem  Description     : Sends inputs to annuity rates spreadsheets and collects
+    'annuity rates for calcs
+    '
+    '
+    Rem  Further Info    :
+    Rem  Date             Developer     Action/Comments
+    '------------------------------------------------------------------------
+    '    dd/mm/yyyy       Name          X
+    '    dd/mm/yyyy       Name          X
+    '------------------------------------------------------------------------
+
+    Rem Error handler
+    On Error GoTo ErrorHandler
+    Rem Set variables
+    
+    
+    If Range("IsPhasedCalc") = "Yes" Then 'pradip
+        Sheets("Background").Activate
+        With ActiveWindow
+            .DisplayHeadings = False
+            .DisplayOutline = False
+            '.DisplayWorkbookTabs = False
+            '.DisplayHorizontalScrollBar = False
+            '.DisplayVerticalScrollBar = True
+        End With
+    End If
+
+
+
+10 Call Open_Annrates_files
+11  Call modGlobals.Create_Globals
+20 strProcName = "Run_Calc"
+   
+    Rem turn off screen movements and in turn reduce processing time
+60  Application.ScreenUpdating = False
+
+61 Application.Calculation = xlCalculationAutomatic 'RS 30.08.2016
+   
+Rem send inputs
+
+70  wksInputs.Range("name") = wksProjInput.Range("Client_Name").Value 'name
+80  If wksProjInput.Range("PRO_SEX").Value = "F" Then 'Sex
+90  wksInputs.Range("sex") = "Female"
+100 Else
+110 wksInputs.Range("sex") = "Male"
+120 End If
+130 wksInputs.Range("comm_date") = wksProjInput.Range("Calc.date").Value 'Comm Date
+140 wksInputs.Range("dob") = wksProjInput.Range("PRO_DOB").Value 'Dob
+141 wksInputs.Range("Spouse_DOB") = wksProjInput.Range("Spouse_DOB").Value 'Spouse Dob
+150 wksInputs.Range("Age_next") = wksProjInput.Range("Current_Age").Value 'Age
+160 wksInputs.Range("SRA") = wksProjInput.Range("NRA").Value 'SRA
+170 wksInputs.Range("Pension_esc") = wksProjInput.Range("Pen_Esc").Value 'Pension esc
+180 wksInputs.Range("Spouses_port") = wksProjInput.Range("Spouse_WRA").Value 'Spouses port
+190 wksInputs.Range("C30") = wksProjInput.Range("Pen_Esc").Value 'Pen esc (pre 97 only)
+200 wksInputs.Range("C31") = wksProjInput.Range("Spouse_WRA").Value 'Spouses port
+'*********************ST 05.08.2016 - Commented out under P3576b-WPI**************************
+'201 If wksProjInput.Range("Scheme_Type").Value = "Unisure" Then 'Unisure_Flag
+'202  wksInputs.Range("Unisure_Test") = "Y"
+'203 Else
+204 wksInputs.Range("Unisure_Test") = "N"
+'205 End If
+'**********************End of ST 05.08.2016***************************************************
+Rem collect outputs
+Rem NPR Rates
+'=IF(G28="NPR LPI Rate",'final calcs'!$O$62,IF(Pen_Esc="RPI",'Results'!$D$98,'Results'!D$32))
+'=IF(G28="NPR LPI Rate",'final calcs'!$P$62,IF(Pen_Esc="RPI",'Results'!$F$98,'Results'!F$32))
+'=IF(G28="NPR LPI Rate",'final calcs'!$Q$62,IF(Pen_Esc="RPI",'Results'!H$98,'Results'!H$32))
+210 If wksProjInput.Range("G28") = "NPR LPI Rate" Then
+Rem POST 97 - NPR XL Plus (LPI)
+220 wksProjInput.Range("NPR_ANN_5") = wksFinalCalcs.Range("O62").Value 'low
+230 wksProjInput.Range("NPR_ANN_7") = wksFinalCalcs.Range("P62").Value 'mid
+240 wksProjInput.Range("NPR_ANN_9") = wksFinalCalcs.Range("Q62").Value 'high
+250 Else
+260 If wksProjInput.Range("Pen_Esc") = "RPI" Then
+270 wksProjInput.Range("NPR_ANN_5") = wksResults.Range("D98").Value 'low
+280 wksProjInput.Range("NPR_ANN_7") = wksResults.Range("F98").Value 'mid
+290 wksProjInput.Range("NPR_ANN_9") = wksResults.Range("H98").Value 'high
+300 Else
+310 wksProjInput.Range("NPR_ANN_5") = wksResults.Range("D32").Value 'low
+320 wksProjInput.Range("NPR_ANN_7") = wksResults.Range("F32").Value 'mid
+330 wksProjInput.Range("NPR_ANN_9") = wksResults.Range("H32").Value 'high
+340 End If
+350 End If
+
+Rem PRP Rates
+'=IF(Pst_Pre_PRP="Pre 1997",'Results'!D64,'final calcs'!$D$62)
+'=IF(Pst_Pre_PRP="Pre 1997",'Results'!F64,'final calcs'!$E$62)
+'=IF(Pst_Pre_PRP="Pre 1997",'Results'!H64,'final calcs'!$F$62)
+360 If wksProjInput.Range("Pst_Pre_PRP") = "Pre 1997" Then
+370 wksProjInput.Range("PRP_ANN_5") = wksResults.Range("D64").Value 'low
+380 wksProjInput.Range("PRP_ANN_7") = wksResults.Range("F64").Value 'mid
+390 wksProjInput.Range("PRP_ANN_9") = wksResults.Range("H64").Value 'high
+400 Else
+'POST 97 - PRP TV (LPI)
+410 wksProjInput.Range("PRP_ANN_5") = wksFinalCalcs.Range("D62").Value 'low
+420 wksProjInput.Range("PRP_ANN_7") = wksFinalCalcs.Range("E62").Value 'mid
+430 wksProjInput.Range("PRP_ANN_9") = wksFinalCalcs.Range("F62").Value 'high
+440 End If
+
+
+'*********************ST 23.08.2016 - Changed under P3576b-WPI**************************
+wksInputs.Range("SRA") = wksPostSRA.Range("Post_SRA_Age").Value 'Age 75
+ If wksProjInput.Range("G28") = "NPR LPI Rate" Then
+Rem POST 97 - NPR XL Plus (LPI)
+ wksPostSRA.Range("NPR_ANN_5_PostSRA") = wksFinalCalcs.Range("O62").Value 'low
+ wksPostSRA.Range("NPR_ANN_7_PostSRA") = wksFinalCalcs.Range("P62").Value 'mid
+ wksPostSRA.Range("NPR_ANN_9_PostSRA") = wksFinalCalcs.Range("Q62").Value 'high
+ Else
+ If wksProjInput.Range("Pen_Esc") = "RPI" Then
+ wksPostSRA.Range("NPR_ANN_5_PostSRA") = wksResults.Range("D98").Value 'low
+ wksPostSRA.Range("NPR_ANN_7_PostSRA") = wksResults.Range("F98").Value 'mid
+ wksPostSRA.Range("NPR_ANN_9_PostSRA") = wksResults.Range("H98").Value 'high
+ Else
+ wksPostSRA.Range("NPR_ANN_5_PostSRA") = wksResults.Range("D32").Value 'low
+ wksPostSRA.Range("NPR_ANN_7_PostSRA") = wksResults.Range("F32").Value 'mid
+ wksPostSRA.Range("NPR_ANN_9_PostSRA") = wksResults.Range("H32").Value 'high
+ End If
+ End If
+ 
+ If wksProjInput.Range("Pst_Pre_PRP") = "Pre 1997" Then
+ wksPostSRA.Range("PRP_ANN_5_PostSRA") = wksResults.Range("D64").Value 'low
+ wksPostSRA.Range("PRP_ANN_7_PostSRA") = wksResults.Range("F64").Value 'mid
+ wksPostSRA.Range("PRP_ANN_9_PostSRA") = wksResults.Range("H64").Value 'high
+ Else
+'POST 97 - PRP TV (LPI)
+ wksPostSRA.Range("PRP_ANN_5_PostSRA") = wksFinalCalcs.Range("D62").Value 'low
+ wksPostSRA.Range("PRP_ANN_7_PostSRA") = wksFinalCalcs.Range("E62").Value 'mid
+ wksPostSRA.Range("PRP_ANN_9_PostSRA") = wksFinalCalcs.Range("F62").Value 'high
+ End If
+'**********************End of ST 05.08.2016***********************************************
+
+Rem send inputs for SMPI x2
+
+'D11=IF('FutproD2D 2010.xls'!Freq_of_Prem="Monthly",12,IF('FutproD2D 2010.xls'!Freq_of_Prem="Quarterly",3,IF('FutproD2D 2010.xls'!Freq_of_Prem="Half-Yearly",6,1)))
+'D12=IF('FutproD2D 2010.xls'!Payment_Timing="Paid in Advance",1,0)
+'D13='FutproD2D 2010.xls'!Guaranteed_Period
+'D14='FutproD2D 2010.xls'!Calc.date
+'D15='[FutproD2D 2010.xls]Projection Calculation'!$IV$25+'[FutproD2D 2010.xls]Projection Calculation'!$IV$26
+'D16=IF('FutproD2D 2010.xls'!PRP_FV>0,"Y","N")
+'D17=IF('FutproD2D 2010.xls'!Civil_Partnership="Y","Y","N")
+'D20='FutproD2D 2010.xls'!Revised_NRD
+'D21='FutproD2D 2010.xls'!PRO_DOB
+'D22=IF(OR('FutproD2D 2010.xls'!Mar.status="M",'FutproD2D 2010.xls'!Mar.status="M ",'FutproD2D 2010.xls'!Mar.status="m"),"M",IF(OR('FutproD2D 2010.xls'!Mar.status="S",'FutproD2D 2010.xls'!Mar.status="S ",'FutproD2D 2010.xls'!Mar.status="s"),"S"))
+'D23=IF(OR('FutproD2D 2010.xls'!PRO_Sex="M",'FutproD2D 2010.xls'!PRO_Sex="M ",'FutproD2D 2010.xls'!PRO_Sex="m"),"M",IF(OR('FutproD2D 2010.xls'!PRO_Sex="F",'FutproD2D 2010.xls'!PRO_Sex="F ",'FutproD2D 2010.xls'!PRO_Sex="f"),"F"))
+'D27=IF(D16="Y",IF('FutproD2D 2010.xls'!Spouse_DOB="",DATE(YEAR('FutproD2D 2010.xls'!PRO_DOB)+IF(D23="M",3,-3),MONTH('FutproD2D 2010.xls'!PRO_DOB),DAY('FutproD2D 2010.xls'!PRO_DOB)),'FutproD2D 2010.xls'!Spouse_DOB),'FutproD2D 2010.xls'!Spouse_DOB)
+'D28=IF(OR(D16="Y",D22<>"S",),IF(D17="Y",D23,IF(D23="M","F","M")),"")
+
+450 If wksProjInput.Range("Freq_of_Prem") = "Monthly" Then
+460 wksSMPIInSing.Range("D11") = 12
+470 wksSMPIInJoint.Range("D11") = 12
+480 Else
+490 If wksProjInput.Range("Freq_of_Prem") = "Quarterly" Then
+500 wksSMPIInJoint.Range("D11") = 3
+510 Else
+520 If wksProjInput.Range("Freq_of_Prem") = "Half -Yearly" Then
+530 wksSMPIInJoint.Range("D11") = 6
+540 Else
+550 wksSMPIInJoint.Range("D11") = 1
+560 End If
+570 End If
+580 End If
+
+590 If wksProjInput.Range("Payment_Timing") = "Paid in Advance" Then
+600 wksSMPIInSing.Range("D12") = 1
+610 wksSMPIInJoint.Range("D12") = 1
+620 Else
+630 wksSMPIInSing.Range("D12") = 0
+640 wksSMPIInJoint.Range("D12") = 0
+650 End If
+
+660 wksSMPIInSing.Range("D13") = wksProjInput.Range("Guaranteed_Period").Value
+670 wksSMPIInJoint.Range("D13") = wksProjInput.Range("Guaranteed_Period").Value
+
+680 wksSMPIInSing.Range("D14") = wksProjInput.Range("Calc.date").Value
+690 wksSMPIInJoint.Range("D14") = wksProjInput.Range("Calc.date").Value
+
+699 If Not (IsError(wksProjCalc.Range("IV25")) And IsError(wksProjCalc.Range("IV26"))) Then
+700     wksSMPIInSing.Range("D15") = wksProjCalc.Range("IV25") + wksProjCalc.Range("IV26")
+710     wksSMPIInJoint.Range("D15") = wksProjCalc.Range("IV25") + wksProjCalc.Range("IV26")
+711 End If
+
+720 If wksProjInput.Range("PRP_FV") > 0 Then
+730 wksSMPIInSing.Range("D16") = "Y"
+740 wksSMPIInJoint.Range("D16") = "Y"
+750 Else
+760 wksSMPIInSing.Range("D16") = "N"
+770 wksSMPIInJoint.Range("D16") = "N"
+780 End If
+
+790 If wksProjInput.Range("Civil_Partnership") = "Y" Then
+800 wksSMPIInSing.Range("D17") = "Y"
+810 wksSMPIInJoint.Range("D17") = "Y"
+820 Else
+830 wksSMPIInSing.Range("D17") = "N"
+840 wksSMPIInJoint.Range("D17") = "N"
+850 End If
+
+860 wksSMPIInSing.Range("D20") = wksProjInput.Range("Revised_NRD").Value
+870 wksSMPIInJoint.Range("D20") = wksProjInput.Range("Revised_NRD").Value
+
+880 wksSMPIInSing.Range("D21") = wksProjInput.Range("PRO_DOB").Value
+890 wksSMPIInJoint.Range("D21") = wksProjInput.Range("PRO_DOB").Value
+
+900 If UCase(Trim(wksProjInput.Range("Mar.status"))) = "M" Then
+910 wksSMPIInSing.Range("D22") = "M"
+920 wksSMPIInJoint.Range("D22") = "M"
+930 Else
+940 wksSMPIInSing.Range("D22") = "S"
+950 wksSMPIInJoint.Range("D22") = "S"
+960 End If
+
+970 If UCase(Trim(wksProjInput.Range("PRO_SEX"))) = "M" Then
+980 wksSMPIInSing.Range("D23") = "M"
+990 wksSMPIInJoint.Range("D23") = "M"
+1000 Else
+1010 wksSMPIInSing.Range("D23") = "F"
+1020 wksSMPIInJoint.Range("D23") = "F"
+1030 End If
+
+1040 If wksProjInput.Range("PRP_FV") > 0 Then
+1050 If wksProjInput.Range("Spouse_DOB") = "" Then
+1060 If UCase(Trim(wksProjInput.Range("PRO_SEX"))) = "M" Then
+
+1070 wksSMPIInSing.Range("D27") = DateAdd("yyyy", 3, wksProjInput.Range("PRO_DOB"))
+1080 wksSMPIInJoint.Range("D27") = DateAdd("yyyy", 3, wksProjInput.Range("PRO_DOB"))
+
+'wksSMPIInSing.Range("D27") = Format(Day(wksProjInput.Range("PRO_DOB")), Month(wksProjInput.Range("PRO_DOB"), Year(wksProjInput.Range("PRO_DOB")) + 3), "dd/mm/yyyy")
+'wksSMPIInJoint.Range("D27") = Format(Day(wksProjInput.Range("PRO_DOB")), Month(wksProjInput.Range("PRO_DOB"), Year(wksProjInput.Range("PRO_DOB")) + 3), "dd/mm/yyyy")
+'wksSMPIInSing.Range("D27")= DATE(YEAR(wksProjInput.range("PRO_DOB"))+3,MONTH(wksProjInput.range("PRO_DOB")),DAY(wksProjInput.range("PRO_DOB")))
+'wksSMPIInjoint.Range("D27")= DATE(YEAR(wksProjInput.range("PRO_DOB"))+3,MONTH(wksProjInput.range("PRO_DOB")),DAY(wksProjInput.range("PRO_DOB")))
+1090 Else
+1100 wksSMPIInSing.Range("D27") = DateAdd("yyyy", -3, wksProjInput.Range("PRO_DOB"))
+1110 wksSMPIInJoint.Range("D27") = DateAdd("yyyy", -3, wksProjInput.Range("PRO_DOB"))
+'wksSMPIInSing.Range("D27") = Format(Day(wksProjInput.Range("PRO_DOB")), Month(wksProjInput.Range("PRO_DOB"), Year(wksProjInput.Range("PRO_DOB")) - 3), "dd/mm/yyyy")
+'wksSMPIInJoint.Range("D27") = Format(Day(wksProjInput.Range("PRO_DOB")), Month(wksProjInput.Range("PRO_DOB"), Year(wksProjInput.Range("PRO_DOB")) - 3), "dd/mm/yyyy")
+'wksSMPIInSing.Range("D27")= DATE(YEAR(wksProjInput.range("PRO_DOB"))-3,MONTH(wksProjInput.range("PRO_DOB")),DAY(wksProjInput.range("PRO_DOB")))
+'wksSMPIInjoint.Range("D27")= DATE(YEAR(wksProjInput.range("PRO_DOB"))-3,MONTH(wksProjInput.range("PRO_DOB")),DAY(wksProjInput.range("PRO_DOB")))
+1120 End If
+1130 Else
+1140 wksSMPIInSing.Range("D27") = wksProjInput.Range("Spouse_DOB")
+1150 wksSMPIInJoint.Range("D27") = wksProjInput.Range("Spouse_DOB")
+1160 End If
+1170 Else
+1180 wksSMPIInSing.Range("D27") = ""
+1190 wksSMPIInJoint.Range("D27") = ""
+1200 End If
+
+1210 If wksProjInput.Range("PRP_FV") > 0 Or UCase(Trim(wksProjInput.Range("Mar.status"))) <> "S" Then
+1220 If wksProjInput.Range("Civil_Partnership") = "Y" Then
+1230 wksSMPIInSing.Range("D28") = wksProjInput.Range("PRO_SEX")
+1240 wksSMPIInJoint.Range("D28") = wksProjInput.Range("PRO_SEX")
+1250 Else
+1260 If UCase(Trim(wksProjInput.Range("PRO_SEX"))) = "M" Then
+1270 wksSMPIInSing.Range("D28") = "F"
+1280 wksSMPIInJoint.Range("D28") = "F"
+1290 Else
+1300 wksSMPIInSing.Range("D28") = "M"
+1310 wksSMPIInJoint.Range("D28") = "M"
+1320 End If
+1330 End If
+1340 Else
+1350 wksSMPIInSing.Range("D28") = ""
+1360 wksSMPIInJoint.Range("D28") = ""
+1370 End If
+
+'Comment out by Kalyan on 26/10/2023 in SMPI incident to add the expense
+'Rem SMPI
+''=IF('[SMPI Single.xls]Output'!$D$51="",IF(NPR_FV<1,PRP_ANN_SMPI,'[SMPI Single.xls]Output'!$D$53),'[SMPI Single.xls]Output'!$D$51)
+'
+'1380 If wksSMPIOutSing.Range("D51") = "" Then
+'1390 If wksProjInput.Range("NPR_FV") < 1 Then
+'1400 wksProjInput.Range("NPR_ANN_SMPI") = wksProjInput.Range("PRP_ANN_SMPI")
+'1410 Else
+'1411 wksProjInput.Range("NPR_ANN_SMPI") = wksSMPIOutSing.Range("D53")
+'1412 End If
+'1413 Else
+'1414 wksProjInput.Range("NPR_ANN_SMPI") = wksSMPIOutSing.Range("D51")
+'1415 End If
+
+'Added by Kalyan on 26/10/2023 in SMPI incident to add the expense
+1380 If wksSMPIOutSing.Range("D51") = "" Then
+1390    If wksProjInput.Range("NPR_FV") < 1 Then
+1400        wksProjInput.Range("NPR_ANN_SMPI") = wksProjInput.Range("PRP_ANN_SMPI")
+1410    Else
+1411        wksProjInput.Range("NPR_ANN_SMPI") = wksSMPIOutSing.Range("D53") * (1 + wksSMPIInSing.Range("D6").Value) ' multiply with (1+ expense)
+1412    End If
+1413 Else
+1414    wksProjInput.Range("NPR_ANN_SMPI") = wksSMPIOutSing.Range("D51") * (1 + wksSMPIInSing.Range("D6").Value) ' multiply with (1+ expense)
+1415 End If
+
+'Comment out by Kalyan on 26/10/2023 in SMPI incident to add the expense
+''=IF('[SMPI Joint.xls]Output'!$D$53="",NPR_ANN_SMPI,'[SMPI Joint.xls]Output'!$D$53)
+'
+'1420 If wksSMPIOutJoint.Range("D53") = "" Then
+'1430 wksProjInput.Range("PRP_ANN_SMPI") = wksProjInput.Range("NPR_ANN_SMPI")
+'1440 Else
+'1450 wksProjInput.Range("PRP_ANN_SMPI") = wksSMPIOutJoint.Range("D53")
+'1460 End If
+
+'Added by Kalyan on 26/10/2023 in SMPI incident to add the expense
+1420 If wksSMPIOutJoint.Range("D53") = "" Then
+1430    wksProjInput.Range("PRP_ANN_SMPI") = wksProjInput.Range("NPR_ANN_SMPI")
+1440 Else
+1450    wksProjInput.Range("PRP_ANN_SMPI") = wksSMPIOutJoint.Range("D53") * (1 + wksSMPIInJoint.Range("D6").Value) ' multiply with (1+ expense)
+1460 End If
+      
+    Rem turn on screen movements and return control back to user
+1470 Application.ScreenUpdating = True
+    
+    If Range("IsPhasedCalc") = "Yes" Then 'pradip
+        Sheets("Background").Activate
+    Else
+        Rem select output sheet
+1480    wksProjInput.Select
+    
+    End If
+    
+
+    Rem Set all variables, objects, ranges & class modules to nothing
+1489 Call Close_Annrates_files
+'1490 Call modGlobals.Delete_Globals
+
+    Rem stops procedure
+1520 Exit Sub
+    Rem Calls the error handler
+ErrorHandler:
+1530 Application.ScreenUpdating = True
+'1531 Call Close_Annrates_files
+1540 gErr.Number = Err.Number
+1550 gErr.Description = Err.Description
+1560 gErr.Source = Err.Source
+1570 gErr.Erl = Erl
+1620 Call modError.Handler
+
+End Sub
+Public Sub Run_Calc_Bulk()
+    
+    '------------------------------------------------------------------------
+    Rem  Created         : 14/02/11
+    Rem  Author          : Leanne Dalgleish
+    Rem  Description     : Sends inputs to annuity rates spreadsheets and collects
+    'annuity rates for calcs
+    '
+    '
+    Rem  Further Info    :
+    Rem  Date             Developer     Action/Comments
+    '------------------------------------------------------------------------
+    '    dd/mm/yyyy       Name          X
+    '    dd/mm/yyyy       Name          X
+    '------------------------------------------------------------------------
+
+    Rem Error handler
+    On Error GoTo ErrorHandler
+    Rem Set variables
+    
+'10 Call Open_Annrates_files
+'11  Call modGlobals.Create_Globals
+20 strProcName = "Run_Calc_Bulk"
+   
+    Rem turn off screen movements and in turn reduce processing time
+60  Application.ScreenUpdating = False
+   
+Rem send inputs
+
+70  wksInputs.Range("name") = wksProjInput.Range("Client_Name").Value 'name
+80  If wksProjInput.Range("PRO_SEX").Value = "F" Then 'Sex
+90  wksInputs.Range("sex") = "Female"
+100 Else
+110 wksInputs.Range("sex") = "Male"
+120 End If
+130 wksInputs.Range("comm_date") = wksProjInput.Range("Calc.date").Value 'Comm Date
+140 wksInputs.Range("dob") = wksProjInput.Range("PRO_DOB").Value 'Dob
+141 wksInputs.Range("Spouse_DOB") = wksProjInput.Range("Spouse_DOB").Value 'Spouse Dob
+150 wksInputs.Range("Age_next") = wksProjInput.Range("Current_Age").Value 'Age
+160 wksInputs.Range("SRA") = wksProjInput.Range("NRA").Value 'SRA
+170 wksInputs.Range("Pension_esc") = wksProjInput.Range("Pen_Esc").Value 'Pension esc
+180 wksInputs.Range("Spouses_port") = wksProjInput.Range("Spouse_WRA").Value 'Spouses port
+190 wksInputs.Range("C30") = wksProjInput.Range("Pen_Esc").Value 'Pen esc (pre 97 only)
+200 wksInputs.Range("C31") = wksProjInput.Range("Spouse_WRA").Value 'Spouses port
+
+'*********************ST 05.08.2016 - Commented out under P3576b-WPI**************************
+'201 If wksProjInput.Range("Scheme_Type").Value = "Unisure" Then 'Unisure_Flag
+'202  wksInputs.Range("Unisure_Test") = "Y"
+'203 Else
+204 wksInputs.Range("Unisure_Test") = "N"
+'205 End If
+'**********************End of ST 05.08.2016***************************************************
+
+Rem collect outputs
+Rem NPR Rates
+'=IF(G28="NPR LPI Rate",'final calcs'!$O$62,IF(Pen_Esc="RPI",'Results'!$D$98,'Results'!D$32))
+'=IF(G28="NPR LPI Rate",'final calcs'!$P$62,IF(Pen_Esc="RPI",'Results'!$F$98,'Results'!F$32))
+'=IF(G28="NPR LPI Rate",'final calcs'!$Q$62,IF(Pen_Esc="RPI",'Results'!H$98,'Results'!H$32))
+210 If wksProjInput.Range("G28") = "NPR LPI Rate" Then
+Rem POST 97 - NPR XL Plus (LPI)
+220 wksProjInput.Range("NPR_ANN_5") = wksFinalCalcs.Range("O62").Value 'low
+230 wksProjInput.Range("NPR_ANN_7") = wksFinalCalcs.Range("P62").Value 'mid
+240 wksProjInput.Range("NPR_ANN_9") = wksFinalCalcs.Range("Q62").Value 'high
+250 Else
+260 If wksProjInput.Range("Pen_Esc") = "RPI" Then
+270 wksProjInput.Range("NPR_ANN_5") = wksResults.Range("D98").Value 'low
+280 wksProjInput.Range("NPR_ANN_7") = wksResults.Range("F98").Value 'mid
+290 wksProjInput.Range("NPR_ANN_9") = wksResults.Range("H98").Value 'high
+300 Else
+310 wksProjInput.Range("NPR_ANN_5") = wksResults.Range("D32").Value 'low
+320 wksProjInput.Range("NPR_ANN_7") = wksResults.Range("F32").Value 'mid
+330 wksProjInput.Range("NPR_ANN_9") = wksResults.Range("H32").Value 'high
+340 End If
+350 End If
+
+Rem PRP Rates
+'=IF(Pst_Pre_PRP="Pre 1997",'Results'!D64,'final calcs'!$D$62)
+'=IF(Pst_Pre_PRP="Pre 1997",'Results'!F64,'final calcs'!$E$62)
+'=IF(Pst_Pre_PRP="Pre 1997",'Results'!H64,'final calcs'!$F$62)
+360 If wksProjInput.Range("Pst_Pre_PRP") = "Pre 1997" Then
+370 wksProjInput.Range("PRP_ANN_5") = wksResults.Range("D64").Value 'low
+380 wksProjInput.Range("PRP_ANN_7") = wksResults.Range("F64").Value 'mid
+390 wksProjInput.Range("PRP_ANN_9") = wksResults.Range("H64").Value 'high
+400 Else
+'POST 97 - PRP TV (LPI)
+410 wksProjInput.Range("PRP_ANN_5") = wksFinalCalcs.Range("D62").Value 'low
+420 wksProjInput.Range("PRP_ANN_7") = wksFinalCalcs.Range("E62").Value 'mid
+430 wksProjInput.Range("PRP_ANN_9") = wksFinalCalcs.Range("F62").Value 'high
+440 End If
+
+Rem send inputs for SMPI x2
+
+'D11=IF('FutproD2D 2010.xls'!Freq_of_Prem="Monthly",12,IF('FutproD2D 2010.xls'!Freq_of_Prem="Quarterly",3,IF('FutproD2D 2010.xls'!Freq_of_Prem="Half-Yearly",6,1)))
+'D12=IF('FutproD2D 2010.xls'!Payment_Timing="Paid in Advance",1,0)
+'D13='FutproD2D 2010.xls'!Guaranteed_Period
+'D14='FutproD2D 2010.xls'!Calc.date
+'D15='[FutproD2D 2010.xls]Projection Calculation'!$IV$25+'[FutproD2D 2010.xls]Projection Calculation'!$IV$26
+'D16=IF('FutproD2D 2010.xls'!PRP_FV>0,"Y","N")
+'D17=IF('FutproD2D 2010.xls'!Civil_Partnership="Y","Y","N")
+'D20='FutproD2D 2010.xls'!Revised_NRD
+'D21='FutproD2D 2010.xls'!PRO_DOB
+'D22=IF(OR('FutproD2D 2010.xls'!Mar.status="M",'FutproD2D 2010.xls'!Mar.status="M ",'FutproD2D 2010.xls'!Mar.status="m"),"M",IF(OR('FutproD2D 2010.xls'!Mar.status="S",'FutproD2D 2010.xls'!Mar.status="S ",'FutproD2D 2010.xls'!Mar.status="s"),"S"))
+'D23=IF(OR('FutproD2D 2010.xls'!PRO_Sex="M",'FutproD2D 2010.xls'!PRO_Sex="M ",'FutproD2D 2010.xls'!PRO_Sex="m"),"M",IF(OR('FutproD2D 2010.xls'!PRO_Sex="F",'FutproD2D 2010.xls'!PRO_Sex="F ",'FutproD2D 2010.xls'!PRO_Sex="f"),"F"))
+'D27=IF(D16="Y",IF('FutproD2D 2010.xls'!Spouse_DOB="",DATE(YEAR('FutproD2D 2010.xls'!PRO_DOB)+IF(D23="M",3,-3),MONTH('FutproD2D 2010.xls'!PRO_DOB),DAY('FutproD2D 2010.xls'!PRO_DOB)),'FutproD2D 2010.xls'!Spouse_DOB),'FutproD2D 2010.xls'!Spouse_DOB)
+'D28=IF(OR(D16="Y",D22<>"S",),IF(D17="Y",D23,IF(D23="M","F","M")),"")
+
+450 If wksProjInput.Range("Freq_of_Prem") = "Monthly" Then
+460 wksSMPIInSing.Range("D11") = 12
+470 wksSMPIInJoint.Range("D11") = 12
+480 Else
+490 If wksProjInput.Range("Freq_of_Prem") = "Quarterly" Then
+500 wksSMPIInJoint.Range("D11") = 3
+510 Else
+520 If wksProjInput.Range("Freq_of_Prem") = "Half -Yearly" Then
+530 wksSMPIInJoint.Range("D11") = 6
+540 Else
+550 wksSMPIInJoint.Range("D11") = 1
+560 End If
+570 End If
+580 End If
+
+590 If wksProjInput.Range("Payment_Timing") = "Paid in Advance" Then
+600 wksSMPIInSing.Range("D12") = 1
+610 wksSMPIInJoint.Range("D12") = 1
+620 Else
+630 wksSMPIInSing.Range("D12") = 0
+640 wksSMPIInJoint.Range("D12") = 0
+650 End If
+
+660 wksSMPIInSing.Range("D13") = wksProjInput.Range("Guaranteed_Period").Value
+670 wksSMPIInJoint.Range("D13") = wksProjInput.Range("Guaranteed_Period").Value
+
+680 wksSMPIInSing.Range("D14") = wksProjInput.Range("Calc.date").Value
+690 wksSMPIInJoint.Range("D14") = wksProjInput.Range("Calc.date").Value
+
+700 wksSMPIInSing.Range("D15") = wksProjCalc.Range("IV25") + wksProjCalc.Range("IV26")
+710 wksSMPIInJoint.Range("D15") = wksProjCalc.Range("IV25") + wksProjCalc.Range("IV26")
+
+720 If wksProjInput.Range("PRP_FV") > 0 Then
+730 wksSMPIInSing.Range("D16") = "Y"
+740 wksSMPIInJoint.Range("D16") = "Y"
+750 Else
+760 wksSMPIInSing.Range("D16") = "N"
+770 wksSMPIInJoint.Range("D16") = "N"
+780 End If
+
+790 If wksProjInput.Range("Civil_Partnership") = "Y" Then
+800 wksSMPIInSing.Range("D17") = "Y"
+810 wksSMPIInJoint.Range("D17") = "Y"
+820 Else
+830 wksSMPIInSing.Range("D17") = "N"
+840 wksSMPIInJoint.Range("D17") = "N"
+850 End If
+
+860 wksSMPIInSing.Range("D20") = wksProjInput.Range("Revised_NRD").Value
+870 wksSMPIInJoint.Range("D20") = wksProjInput.Range("Revised_NRD").Value
+
+880 wksSMPIInSing.Range("D21") = wksProjInput.Range("PRO_DOB").Value
+890 wksSMPIInJoint.Range("D21") = wksProjInput.Range("PRO_DOB").Value
+
+900 If UCase(Trim(wksProjInput.Range("Mar.status"))) = "M" Then
+910 wksSMPIInSing.Range("D22") = "M"
+920 wksSMPIInJoint.Range("D22") = "M"
+930 Else
+940 wksSMPIInSing.Range("D22") = "S"
+950 wksSMPIInJoint.Range("D22") = "S"
+960 End If
+
+970 If UCase(Trim(wksProjInput.Range("PRO_SEX"))) = "M" Then
+980 wksSMPIInSing.Range("D23") = "M"
+990 wksSMPIInJoint.Range("D23") = "M"
+1000 Else
+1010 wksSMPIInSing.Range("D23") = "F"
+1020 wksSMPIInJoint.Range("D23") = "F"
+1030 End If
+
+1040 If wksProjInput.Range("PRP_FV") > 0 Then
+1050 If wksProjInput.Range("Spouse_DOB") = "" Then
+1060 If UCase(Trim(wksProjInput.Range("PRO_SEX"))) = "M" Then
+
+1070 wksSMPIInSing.Range("D27") = DateAdd("yyyy", 3, wksProjInput.Range("PRO_DOB"))
+1080 wksSMPIInJoint.Range("D27") = DateAdd("yyyy", 3, wksProjInput.Range("PRO_DOB"))
+
+'wksSMPIInSing.Range("D27") = Format(Day(wksProjInput.Range("PRO_DOB")), Month(wksProjInput.Range("PRO_DOB"), Year(wksProjInput.Range("PRO_DOB")) + 3), "dd/mm/yyyy")
+'wksSMPIInJoint.Range("D27") = Format(Day(wksProjInput.Range("PRO_DOB")), Month(wksProjInput.Range("PRO_DOB"), Year(wksProjInput.Range("PRO_DOB")) + 3), "dd/mm/yyyy")
+'wksSMPIInSing.Range("D27")= DATE(YEAR(wksProjInput.range("PRO_DOB"))+3,MONTH(wksProjInput.range("PRO_DOB")),DAY(wksProjInput.range("PRO_DOB")))
+'wksSMPIInjoint.Range("D27")= DATE(YEAR(wksProjInput.range("PRO_DOB"))+3,MONTH(wksProjInput.range("PRO_DOB")),DAY(wksProjInput.range("PRO_DOB")))
+1090 Else
+1100 wksSMPIInSing.Range("D27") = DateAdd("yyyy", -3, wksProjInput.Range("PRO_DOB"))
+1110 wksSMPIInJoint.Range("D27") = DateAdd("yyyy", -3, wksProjInput.Range("PRO_DOB"))
+'wksSMPIInSing.Range("D27") = Format(Day(wksProjInput.Range("PRO_DOB")), Month(wksProjInput.Range("PRO_DOB"), Year(wksProjInput.Range("PRO_DOB")) - 3), "dd/mm/yyyy")
+'wksSMPIInJoint.Range("D27") = Format(Day(wksProjInput.Range("PRO_DOB")), Month(wksProjInput.Range("PRO_DOB"), Year(wksProjInput.Range("PRO_DOB")) - 3), "dd/mm/yyyy")
+'wksSMPIInSing.Range("D27")= DATE(YEAR(wksProjInput.range("PRO_DOB"))-3,MONTH(wksProjInput.range("PRO_DOB")),DAY(wksProjInput.range("PRO_DOB")))
+'wksSMPIInjoint.Range("D27")= DATE(YEAR(wksProjInput.range("PRO_DOB"))-3,MONTH(wksProjInput.range("PRO_DOB")),DAY(wksProjInput.range("PRO_DOB")))
+1120 End If
+1130 Else
+1140 wksSMPIInSing.Range("D27") = wksProjInput.Range("Spouse_DOB")
+1150 wksSMPIInJoint.Range("D27") = wksProjInput.Range("Spouse_DOB")
+1160 End If
+1170 Else
+1180 wksSMPIInSing.Range("D27") = ""
+1190 wksSMPIInJoint.Range("D27") = ""
+1200 End If
+
+1210 If wksProjInput.Range("PRP_FV") > 0 Or UCase(Trim(wksProjInput.Range("Mar.status"))) <> "S" Then
+1220 If wksProjInput.Range("Civil_Partnership") = "Y" Then
+1230 wksSMPIInSing.Range("D28") = wksProjInput.Range("PRO_SEX")
+1240 wksSMPIInJoint.Range("D28") = wksProjInput.Range("PRO_SEX")
+1250 Else
+1260 If UCase(Trim(wksProjInput.Range("PRO_SEX"))) = "M" Then
+1270 wksSMPIInSing.Range("D28") = "F"
+1280 wksSMPIInJoint.Range("D28") = "F"
+1290 Else
+1300 wksSMPIInSing.Range("D28") = "M"
+1310 wksSMPIInJoint.Range("D28") = "M"
+1320 End If
+1330 End If
+1340 Else
+1350 wksSMPIInSing.Range("D28") = ""
+1360 wksSMPIInJoint.Range("D28") = ""
+1370 End If
+
+Rem SMPI
+'=IF('[SMPI Single.xls]Output'!$D$51="",IF(NPR_FV<1,PRP_ANN_SMPI,'[SMPI Single.xls]Output'!$D$53),'[SMPI Single.xls]Output'!$D$51)
+
+1380 If wksSMPIOutSing.Range("D51") = "" Then
+1390 If wksProjInput.Range("NPR_FV") < 1 Then
+1400 wksProjInput.Range("NPR_ANN_SMPI") = wksProjInput.Range("PRP_ANN_SMPI")
+1410 Else
+1411 wksProjInput.Range("NPR_ANN_SMPI") = wksSMPIOutSing.Range("D53")
+1412 End If
+1413 Else
+1414 wksProjInput.Range("NPR_ANN_SMPI") = wksSMPIOutSing.Range("D51")
+1415 End If
+
+'=IF('[SMPI Joint.xls]Output'!$D$53="",NPR_ANN_SMPI,'[SMPI Joint.xls]Output'!$D$53)
+
+1420 If wksSMPIOutJoint.Range("D53") = "" Then
+1430 wksProjInput.Range("PRP_ANN_SMPI") = wksProjInput.Range("NPR_ANN_SMPI")
+1440 Else
+1450 wksProjInput.Range("PRP_ANN_SMPI") = wksSMPIOutJoint.Range("D53")
+1460 End If
+      
+    Rem turn on screen movements and return control back to user
+1470 Application.ScreenUpdating = True
+    
+    Rem select output sheet
+'1480 wksProjInput.Select
+
+    Rem Set all variables, objects, ranges & class modules to nothing
+'1489 Call Close_Annrates_files
+'1490 Call modGlobals.Delete_Globals
+
+    Rem stops procedure
+1520 Exit Sub
+    Rem Calls the error handler
+ErrorHandler:
+1530 Application.ScreenUpdating = True
+'1531 Call Close_Annrates_files
+1540 gErr.Number = Err.Number
+1550 gErr.Description = Err.Description
+1560 gErr.Source = Err.Source
+1570 gErr.Erl = Erl
+1620 Call modError.Handler
+End Sub
+
+
+'--------------------------------------------------------------------------------------------------
+'Procedure:     : RefreshPostSRAGrowthRateSheet
+'Comments:      : Copy the recalculated fund values and refresh the the Post SRA Growth rate sheet
+'Arguments:     : None
+'Date             Developer                     Action
+'--------------------------------------------------------------------------------------------------
+'12/08/2016       Satyanand Tripathi           Created (ST 05.08.2016)
+'--------------------------------------------------------------------------------------------------
+'Sub RefreshPostSRAGrowthRateSheet()
+'
+'    Dim dLowFundValue As Double
+'    Dim dMidFundValue As Double
+'    Dim dHighFundValue As Double
+'    Dim dSMPIFundValue As Double
+'
+'5      On Error GoTo ErrorHandler
+'10     strProcName = "RefreshPostSRAGrowthRateSheet"
+'
+'      'Set up global variables
+'20     Set wkbkFutPro = ActiveWorkbook
+'30     Set wksPostSRA = wkbkFutPro.Worksheets("Post SRA Growth rate")
+'40     Set wksProjInput = wkbkFutPro.Worksheets("Proj-input")
+'
+'       'Using variables to avoid circular reference
+'41     dLowFundValue = wksProjInput.Range("R29").Value 'Low Fund value
+'42     dMidFundValue = wksProjInput.Range("S29").Value 'Mid Fund value
+'43     dHighFundValue = wksProjInput.Range("T29").Value 'High Fund value
+'44     dSMPIFundValue = wksProjInput.Range("M56").Value 'SMPI Fund value
+'
+'       'paste the fund values on Post SRA Growth rate sheet
+'50     wksPostSRA.Range("G2").Value = dLowFundValue 'Low Fund value
+'60     wksPostSRA.Range("H2").Value = dMidFundValue 'Mid Fund value
+'70     wksPostSRA.Range("I2").Value = dHighFundValue 'High Fund value
+'80     wksPostSRA.Range("J2").Value = dSMPIFundValue 'SMPI Fund value
+'
+'90     Set wkbkFutPro = Nothing
+'100    Set wksPostSRA = Nothing
+'110    Set wksProjCalc = Nothing
+'
+'    Exit Sub
+'ErrorHandler:
+'130 Application.ScreenUpdating = True
+'131 Set wkbkFutPro = Nothing
+'132 Set wksPostSRA = Nothing
+'133 Set wksProjCalc = Nothing
+'140 gErr.Number = Err.Number
+'150 gErr.Description = Err.Description
+'160 gErr.Source = Err.Source
+'170 gErr.Erl = Erl
+'180 Call modError.Handler
+'
+'End Sub
+
